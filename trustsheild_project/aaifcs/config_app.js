@@ -20,7 +20,7 @@ export const APP_CONFIG = {
   name:        'TrustSheild OS™',
   shortName:   'TrustSheild',
   version:     '1.0.0',
-  buildStage:  'Run 6 — Demo/Live Toggle + Empty Live Mode Separation',
+  buildStage:  'Run 7 — Backend + API Config Panel / Save + Test Layer',
 
   // Branding lines used globally across UI
   brandLine:   'Powered by 4P3X Intelligent AI™',

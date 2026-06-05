@@ -1278,3 +1278,102 @@ export const IDENTITY_SEED_DATA = {
   pwaConfig:     SEED_PWA_CONFIG,
   defaultPwaId:  'TS-PWA-0001',
 }
+
+// ============================================================
+// TrustSheild OS™ — Backend/API Config Seed Data (Run 7)
+// ============================================================
+// ⚠️  DEMO DATA ONLY — No real keys. No real connections.
+//     Shown only in Demo Mode to illustrate configuration.
+// ============================================================
+
+export const DEMO_BACKEND_CONFIG = {
+  supabase: { status: 'demo', projectUrl: '', anonKey: '', realtimeEnabled: false, storageBucket: '', edgeFunctionEndpoint: '', _demo: true },
+  firebase: { status: 'demo', apiKey: '', authDomain: '', projectId: '', appId: '', firestoreEnabled: false, _demo: true },
+  aws:      { status: 'demo', apiBaseUrl: '', region: '', healthCheckEndpoint: '', authMode: 'none', _demo: true },
+  rest:     { status: 'demo', apiBaseUrl: '', healthCheckPath: '/health', publicClientToken: '', authMode: 'none', _demo: true },
+  local:    { status: 'active', localStorageEnabled: true, offlinePwaSupport: true, _demo: true },
+}
+
+export const DEMO_MONITORING_PROVIDERS = {
+  googleSearch:  { name: 'Google Custom Search API',     status: 'not_configured', requiresProxy: true,  entityTypes: ['Company','Brand','Person','Domain'],   _demo: true },
+  newsApi:       { name: 'News API',                     status: 'not_configured', requiresProxy: true,  entityTypes: ['Company','Brand','Person','Project'],  _demo: true },
+  gdelt:         { name: 'GDELT Public News Intelligence', status: 'not_configured', requiresProxy: false, entityTypes: ['Company','Brand','Public Figure'],   _demo: true },
+  bingSearch:    { name: 'Bing Web Search API',          status: 'not_configured', requiresProxy: true,  entityTypes: ['Company','Brand','Person','Domain'],   _demo: true },
+  socialMention: { name: 'Social Mention Monitoring',    status: 'not_configured', requiresProxy: true,  entityTypes: ['Brand','Person','Product'],            _demo: true },
+  reviews:       { name: 'Review Platform Monitoring',   status: 'not_configured', requiresProxy: true,  entityTypes: ['Company','Brand','Product'],           _demo: true },
+  companiesHouse:{ name: 'Companies House / Registry',   status: 'not_configured', requiresProxy: false, entityTypes: ['Company','Organisation'],              _demo: true },
+  domainMonitor: { name: 'Domain / Website Monitor',     status: 'not_configured', requiresProxy: false, entityTypes: ['Domain','Project','Brand'],            _demo: true },
+  rssFeed:       { name: 'RSS Feed Monitor',             status: 'not_configured', requiresProxy: false, entityTypes: ['Brand','Person','Domain','Project'],   _demo: true },
+  webhookCustom: { name: 'Custom Webhook / Endpoint',    status: 'not_configured', requiresProxy: false, entityTypes: ['any'],                                _demo: true },
+}
+
+export const DEMO_TRACKED_ENTITIES = [
+  {
+    id: 'ent-demo-001',
+    entityType: 'Company',
+    displayName: 'Meridian Cafe Group',
+    authorisationScope: 'client_approved',
+    keywords: ['Meridian Cafe', 'meridian cafe group', '@meridiangroup'],
+    domains: ['meridiancafe.example.com'],
+    publicUrls: [],
+    reviewUrls: [],
+    region: 'UK',
+    enabledProviders: ['newsApi', 'reviews', 'googleSearch'],
+    alertSensitivity: 'High',
+    consentStatus: 'confirmed',
+    notes: 'Client-approved monitoring for review and press crisis response.',
+    status: 'Demo',
+    source: 'demo',
+    _demo: true,
+  },
+  {
+    id: 'ent-demo-002',
+    entityType: 'Brand',
+    displayName: 'Vantage Fintech',
+    authorisationScope: 'client_approved',
+    keywords: ['Vantage Fintech', 'vantagefintech', '#VantageFintech'],
+    domains: ['vantagefintech.example.com'],
+    publicUrls: [],
+    reviewUrls: [],
+    region: 'Global',
+    enabledProviders: ['newsApi', 'socialMention', 'googleSearch'],
+    alertSensitivity: 'Critical',
+    consentStatus: 'confirmed',
+    notes: 'Social media complaint and press monitoring for Vantage Fintech.',
+    status: 'Demo',
+    source: 'demo',
+    _demo: true,
+  },
+  {
+    id: 'ent-demo-003',
+    entityType: 'Person',
+    displayName: 'Layla Voss (Public Figure)',
+    authorisationScope: 'public_figure_public_info',
+    keywords: ['Layla Voss', '@layla_voss'],
+    domains: [],
+    publicUrls: [],
+    reviewUrls: [],
+    region: 'UK',
+    enabledProviders: ['newsApi', 'googleSearch'],
+    alertSensitivity: 'Medium',
+    consentStatus: 'public_figure_acknowledged',
+    notes: 'Public figure — public information monitoring only. No private tracking.',
+    status: 'Demo',
+    source: 'demo',
+    _demo: true,
+  },
+]
+
+export const DEMO_ENTITY_PROVIDER_MAP = {
+  'ent-demo-001': ['newsApi', 'reviews', 'googleSearch'],
+  'ent-demo-002': ['newsApi', 'socialMention', 'googleSearch'],
+  'ent-demo-003': ['newsApi', 'googleSearch'],
+}
+
+export const CONFIG_SEED_DATA = {
+  backendConfig:       DEMO_BACKEND_CONFIG,
+  apiProviders:        {},
+  monitoringProviders: DEMO_MONITORING_PROVIDERS,
+  trackedEntities:     DEMO_TRACKED_ENTITIES,
+  entityProviderMap:   DEMO_ENTITY_PROVIDER_MAP,
+}

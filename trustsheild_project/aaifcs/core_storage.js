@@ -95,6 +95,14 @@ export const STORAGE_KEYS = {
   TS_PWA_ID_COUNTER:   'trustsheild_pwa_id_counter',
 
 
+  // ── TrustSheild OS™ Backend/API Config Keys (Run 7) ──────
+  TS_BACKEND_CONFIG:       'trustsheild_backend_config',
+  TS_API_PROVIDERS:        'trustsheild_api_providers',
+  TS_MONITORING_PROVIDERS: 'trustsheild_monitoring_providers',
+  TS_TRACKED_ENTITIES:     'trustsheild_tracked_entities',
+  TS_ENTITY_PROVIDER_MAP:  'trustsheild_entity_provider_map',
+  TS_API_TEST_RESULTS:     'trustsheild_api_test_results',
+  TS_CONFIG_GUARD_EVENTS:  'trustsheild_config_guard_events',
 
 }
 
@@ -763,3 +771,151 @@ export const useIdentityStore = create((set, get) => ({
     set({ pwaIdentities: seed.pwaIdentities, pairingCodes: seed.pairingCodes, pwaConfig: seed.pwaConfig, currentPwaId: seed.defaultPwaId, idCounter: 6 })
   },
 }))
+
+// ─── TrustSheild OS™ Config Store (Run 7) ────────────────────
+// All backend/API provider config, tracked entities, test
+// results, and API Config Guard events live here.
+// This is the 12th distinct Zustand store — additive only.
+// SSOT key: trustsheild_backend_config (and siblings)
+//
+// ⚠️  SAFETY: Never store backend-only secrets here.
+//     Public anon keys / project URLs only.
+//     Service role keys / private keys are BLOCKED by the
+//     4P3X API Config Guard™ before they can be saved.
+// ============================================================
+
+export const useConfigStore = create((set, get) => ({
+
+  // ── Backend Provider Config ───────────────────────────────
+  backendConfig: persist.get(STORAGE_KEYS.TS_BACKEND_CONFIG, null),
+
+  // ── API/Monitoring Provider Configs ──────────────────────
+  apiProviders:        persist.get(STORAGE_KEYS.TS_API_PROVIDERS,        null),
+  monitoringProviders: persist.get(STORAGE_KEYS.TS_MONITORING_PROVIDERS, null),
+
+  // ── Tracked Entities (companies, people, brands…) ────────
+  trackedEntities: persist.get(STORAGE_KEYS.TS_TRACKED_ENTITIES, null),
+
+  // ── Entity → Provider mapping ─────────────────────────────
+  entityProviderMap: persist.get(STORAGE_KEYS.TS_ENTITY_PROVIDER_MAP, null),
+
+  // ── Test results per provider ─────────────────────────────
+  testResults: persist.get(STORAGE_KEYS.TS_API_TEST_RESULTS, null),
+
+  // ── 4P3X API Config Guard™ event log ─────────────────────
+  guardEvents: persist.get(STORAGE_KEYS.TS_CONFIG_GUARD_EVENTS, null),
+
+  // ── Seed demo config examples ─────────────────────────────
+  seedConfigData: (seedData) => {
+    const s = get()
+    const next = {}
+    if (!s.backendConfig)        { next.backendConfig        = seedData.backendConfig;        persist.set(STORAGE_KEYS.TS_BACKEND_CONFIG,       seedData.backendConfig)       }
+    if (!s.apiProviders)         { next.apiProviders         = seedData.apiProviders;         persist.set(STORAGE_KEYS.TS_API_PROVIDERS,        seedData.apiProviders)        }
+    if (!s.monitoringProviders)  { next.monitoringProviders  = seedData.monitoringProviders;  persist.set(STORAGE_KEYS.TS_MONITORING_PROVIDERS, seedData.monitoringProviders) }
+    if (!s.trackedEntities)      { next.trackedEntities      = seedData.trackedEntities;      persist.set(STORAGE_KEYS.TS_TRACKED_ENTITIES,     seedData.trackedEntities)     }
+    if (!s.entityProviderMap)    { next.entityProviderMap    = seedData.entityProviderMap;    persist.set(STORAGE_KEYS.TS_ENTITY_PROVIDER_MAP,  seedData.entityProviderMap)   }
+    if (!s.testResults)          { next.testResults          = {};                            persist.set(STORAGE_KEYS.TS_API_TEST_RESULTS,     {})                           }
+    if (!s.guardEvents)          { next.guardEvents          = [];                            persist.set(STORAGE_KEYS.TS_CONFIG_GUARD_EVENTS,  [])                           }
+    if (Object.keys(next).length) set(next)
+  },
+
+  // ── Save a backend provider config ────────────────────────
+  saveBackendConfig: (providerId, config) => {
+    const backendConfig = { ...(get().backendConfig || {}), [providerId]: { ...config, savedAt: new Date().toISOString() } }
+    persist.set(STORAGE_KEYS.TS_BACKEND_CONFIG, backendConfig)
+    set({ backendConfig })
+  },
+
+  // ── Save an API/monitoring provider config ─────────────────
+  saveApiProvider: (providerId, config) => {
+    const apiProviders = { ...(get().apiProviders || {}), [providerId]: { ...config, savedAt: new Date().toISOString() } }
+    persist.set(STORAGE_KEYS.TS_API_PROVIDERS, apiProviders)
+    set({ apiProviders })
+  },
+
+  saveMonitoringProvider: (providerId, config) => {
+    const monitoringProviders = { ...(get().monitoringProviders || {}), [providerId]: { ...config, savedAt: new Date().toISOString() } }
+    persist.set(STORAGE_KEYS.TS_MONITORING_PROVIDERS, monitoringProviders)
+    set({ monitoringProviders })
+  },
+
+  // ── Save test result ───────────────────────────────────────
+  saveTestResult: (providerId, result) => {
+    const testResults = {
+      ...(get().testResults || {}),
+      [providerId]: { ...result, testedAt: new Date().toISOString() }
+    }
+    persist.set(STORAGE_KEYS.TS_API_TEST_RESULTS, testResults)
+    set({ testResults })
+  },
+
+  // ── Create tracked entity ──────────────────────────────────
+  createTrackedEntity: (entity) => {
+    const id = `ent-${Date.now()}`
+    const now = new Date().toISOString()
+    const record = { id, ...entity, createdAt: now, updatedAt: now }
+    const trackedEntities = [...(get().trackedEntities || []), record]
+    persist.set(STORAGE_KEYS.TS_TRACKED_ENTITIES, trackedEntities)
+    set({ trackedEntities })
+    return record
+  },
+
+  // ── Update tracked entity ──────────────────────────────────
+  updateTrackedEntity: (id, patch) => {
+    const trackedEntities = (get().trackedEntities || []).map(e =>
+      e.id === id ? { ...e, ...patch, updatedAt: new Date().toISOString() } : e
+    )
+    persist.set(STORAGE_KEYS.TS_TRACKED_ENTITIES, trackedEntities)
+    set({ trackedEntities })
+  },
+
+  // ── Save entity-provider mapping ───────────────────────────
+  saveEntityProviderMap: (entityId, providers) => {
+    const entityProviderMap = { ...(get().entityProviderMap || {}), [entityId]: providers }
+    persist.set(STORAGE_KEYS.TS_ENTITY_PROVIDER_MAP, entityProviderMap)
+    set({ entityProviderMap })
+  },
+
+  // ── 4P3X API Config Guard™ ────────────────────────────────
+  logGuardEvent: (event) => {
+    const guardEvents = [
+      { id: Date.now(), ts: new Date().toISOString(), ...event },
+      ...(get().guardEvents || [])
+    ].slice(0, 50)
+    persist.set(STORAGE_KEYS.TS_CONFIG_GUARD_EVENTS, guardEvents)
+    set({ guardEvents })
+  },
+}))
+
+// ─── 4P3X API Config Guard™ ───────────────────────────────────
+// Pure function — does NOT save to store (caller logs events).
+// Returns { safe: boolean, reason: string | null }
+const BLOCKED_PATTERNS = [
+  { re: /service_role/i,            reason: 'Contains "service_role" — backend-only secret' },
+  { re: /SUPABASE_SERVICE_ROLE/i,   reason: 'Supabase service role key — never in frontend' },
+  { re: /OPENAI_API_KEY/i,          reason: 'OpenAI secret key — backend only' },
+  { re: /GROQ_API_KEY/i,            reason: 'Groq API key — backend only' },
+  { re: /STRIPE_SECRET_KEY/i,       reason: 'Stripe secret key — backend only' },
+  { re: /sk-[A-Za-z0-9]{20,}/,     reason: 'Looks like an OpenAI/Stripe secret key pattern' },
+  { re: /DATABASE_URL/i,            reason: 'Database URL — backend only' },
+  { re: /JWT_SECRET/i,              reason: 'JWT secret — backend only' },
+  { re: /WEBHOOK_SECRET/i,          reason: 'Webhook secret — backend only' },
+  { re: /AWS_SECRET_ACCESS_KEY/i,   reason: 'AWS secret access key — backend only' },
+  { re: /private_key/i,             reason: 'Private key detected — backend only' },
+  { re: /GOOGLE_SERVICE_ACCOUNT/i,  reason: 'Google service account — backend only' },
+  { re: /FIREBASE_SERVICE_ACCOUNT/i,reason: 'Firebase service account — backend only' },
+  { re: /client_email.*iam\.gserviceaccount/i, reason: 'Service account email — backend only' },
+  { re: /"type"\s*:\s*"service_account"/i,     reason: 'Service account JSON detected — backend only' },
+  { re: /eyJhbGciOi.*service_role/i,           reason: 'Supabase service role JWT pattern' },
+]
+export function applyConfigGuard(value, logGuardEvent) {
+  if (!value || typeof value !== 'string') return { safe: true, reason: null }
+  const trimmed = value.trim()
+  for (const { re, reason } of BLOCKED_PATTERNS) {
+    if (re.test(trimmed)) {
+      logGuardEvent?.({ type: 'blocked', reason, preview: trimmed.slice(0, 8) + '…' })
+      return { safe: false, reason }
+    }
+  }
+  return { safe: true, reason: null }
+}

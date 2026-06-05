@@ -34,8 +34,9 @@ import APP_CONFIG from './config_app'
 import { ROUTES } from './config_routes'
 import TaskConfigPanel from './modules_tasks_TaskConfigPanel'
 import PwaIdentityManager from './modules_ap3x_DriverHUD'
-import { useTaskStore, useIdentityStore } from './core_storage'
-import { TASK_SEED_DATA, IDENTITY_SEED_DATA } from './data_trustsheild_demo'
+import ApiConfigPanel from './modules_ap3x_ApiConfigPanel'
+import { useTaskStore, useIdentityStore, useConfigStore } from './core_storage'
+import { TASK_SEED_DATA, IDENTITY_SEED_DATA, CONFIG_SEED_DATA } from './data_trustsheild_demo'
 
 // ─── Colour helpers ───────────────────────────────────────────
 const RISK_STYLES = {
@@ -1321,12 +1322,14 @@ export default function Dashboard() {
   const { activeTab, setActiveTab, cases, tasks, pwas, timeline, drafts, updates, feedItems, seedDemoData, resetToDemo, mode, enableDemo, enableLive } = useTrustStore()
   const { seedTaskData, resetTaskData } = useTaskStore()
   const { seedIdentities } = useIdentityStore()
+  const { seedConfigData } = useConfigStore()
 
   // Seed demo data on first load
   useEffect(() => {
     seedDemoData(DEMO_DATA)
     seedTaskData(TASK_SEED_DATA)
     seedIdentities(IDENTITY_SEED_DATA)
+    seedConfigData(CONFIG_SEED_DATA)
   }, [])
 
   const isDemo = mode !== 'live'
@@ -1459,9 +1462,14 @@ export default function Dashboard() {
       )}
 
       {activeTab === 'backend' && (
-        <SectionCard title="Backend Ready Status" icon="Database" iconColor="#8f5cff" subtitle={isDemo ? 'Demo Mode active — all data is local and simulated' : 'Live Mode active — backend not yet configured'}>
-          <BackendStatusSection isDemo={isDemo} onEnableDemo={enableDemo} onEnableLive={enableLive} />
-        </SectionCard>
+        <>
+          <SectionCard title="Demo / Live Mode" icon="Radio" iconColor={isDemo ? '#8f5cff' : '#37ff8b'} subtitle={isDemo ? 'Demo Mode active — all data is local and simulated' : 'Live Mode active — backend configuration required'}>
+            <BackendStatusSection isDemo={isDemo} onEnableDemo={enableDemo} onEnableLive={enableLive} />
+          </SectionCard>
+          <SectionCard title="Live Backend Configuration Centre" icon="Database" iconColor="#d6a84f" subtitle={isDemo ? 'Demo config preview — switch to Live Mode to activate real backend setup' : 'Configure backend providers, API connections, and monitored entities'}>
+            <ApiConfigPanel isDemo={isDemo} />
+          </SectionCard>
+        </>
       )}
 
       {activeTab === 'ai' && (

@@ -37,7 +37,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Icon from './components_ui_Icon'
-import { usePwaStore, useTaskStore, useIdentityStore, useTrustStore } from './core_storage'
+import { usePwaStore, useTaskStore, useIdentityStore, useTrustStore, useConfigStore } from './core_storage'
 import { PWA_DEMO_DATA, TASK_SEED_DATA, IDENTITY_SEED_DATA } from './data_trustsheild_demo'
 import APP_CONFIG from './config_app'
 
@@ -381,6 +381,28 @@ function HomeScreen({ profile, pwaCase, pwaTasks, onTab, isDemo }) {
   return (
     <div className="space-y-4">
       {/* Identity header */}
+      {/* Backend / Sync readiness status */}
+      <Card>
+        <div className="p-4 space-y-2">
+          <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'rgba(214,168,79,0.5)' }}>Backend & Sync Status</div>
+          {[
+            { label: 'PWA Mode',          value: isDemo ? 'Demo Local' : 'Live Ready',    color: isDemo ? '#8f5cff' : '#37ff8b' },
+            { label: 'Backend Provider',  value: backendProvider ? `${backendProvider.charAt(0).toUpperCase() + backendProvider.slice(1)} (Saved Locally)` : 'Not Configured', color: backendProvider ? '#d6a84f' : '#f87171' },
+            { label: 'Sync Status',       value: 'Not Connected',                          color: '#f87171'  },
+            { label: 'Monitoring APIs',   value: 'Not Configured',                         color: '#5a5f6b'  },
+          ].map(r => (
+            <div key={r.label} className="flex justify-between items-center py-1.5" style={{ borderBottom: '1px solid rgba(214,168,79,0.05)' }}>
+              <span className="text-xs" style={{ color: '#5a5f6b' }}>{r.label}</span>
+              <span className="text-xs font-medium" style={{ color: r.color }}>{r.value}</span>
+            </div>
+          ))}
+          {!backendProvider && (
+            <p className="text-[10px] pt-1" style={{ color: '#3a3f4b' }}>
+              Configure a backend provider in the Command Dashboard → Backend tab to enable live sync.
+            </p>
+          )}
+        </div>
+      </Card>
       <Card glow>
         <div className="p-4 space-y-3">
           {/* Logo + brand */}
@@ -1247,7 +1269,7 @@ function EscalationScreen({ addEscalation, pwaEscalations, pwaCase }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN 8 — Sync Status
 // ═══════════════════════════════════════════════════════════════
-function SyncScreen({ profile, isDemo }) {
+function SyncScreen({ profile, isDemo, backendProvider }) {
   const SYNC_ROWS = [
     { label: 'PWA Mode',         value: 'Demo',                   color: '#8f5cff' },
     { label: 'Sync Status',      value: 'Local Demo / No Backend', color: '#fbbf24' },
@@ -1512,6 +1534,8 @@ export default function DriverApp() {
   const { seedIdentities, currentPwaId, pwaIdentities } = useIdentityStore()
   const { mode: appMode } = useTrustStore()
   const isDemo = appMode !== 'live'
+  const { backendConfig } = useConfigStore()
+  const backendProvider = backendConfig ? Object.entries(backendConfig).find(([,v]) => v?.status === 'saved_locally')?.[0] : null
 
   // Seed demo data on first load
   useEffect(() => {
@@ -1538,7 +1562,7 @@ export default function DriverApp() {
       case 'drafts':   return <DraftsScreen pwaDraftReviews={pwaDraftReviews} updateDraftReview={updateDraftReview} />
       case 'escalate': return <EscalationScreen addEscalation={addEscalation} pwaEscalations={pwaEscalations} pwaCase={pwaCase} />
       case 'identity': return <IdentityScreen onTab={setActiveTab} />
-      case 'sync':     return <SyncScreen profile={profile} isDemo={isDemo} />
+      case 'sync':     return <SyncScreen profile={profile} isDemo={isDemo} backendProvider={backendProvider} />
       default:         return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
     }
   }
