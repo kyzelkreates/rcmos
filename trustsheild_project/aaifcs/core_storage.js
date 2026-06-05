@@ -1,12 +1,19 @@
 /**
  * ============================================================
- * APEX AI — SINGLE SOURCE OF TRUTH
- * /src/core/storage.js
+ * TrustSheild OS™ — Single Source of Truth
+ * Run 2 — Command Dashboard State Extension
+ * Powered by 4P3X Intelligent AI™  ·  Created by Kyzel Kreates™
+ * ============================================================
  *
- * ALL system state reads and writes through this module.
+ * ALL system state reads and writes go through this module.
  * NO secondary state engines.
  * NO duplicate localStorage keys.
  * NO hard-coded UI state outside this file.
+ *
+ * COMPATIBILITY NOTE:
+ * - Legacy apex: localStorage keys preserved for existing auth/map/nav/PWA sync.
+ * - New TrustSheild OS™ keys use trustsheild: namespace.
+ * - Legacy store names (useFleetStore, useDriverStore) preserved for PWA compat.
  * ============================================================
  */
 
@@ -14,44 +21,55 @@ import { create } from 'zustand'
 
 // ─── Storage Keys ─────────────────────────────────────────────
 export const STORAGE_KEYS = {
-  // App
+  // App (legacy — preserved)
   APP_THEME:          'apex:app:theme',
   APP_SIDEBAR:        'apex:app:sidebar',
   APP_LOCALE:         'apex:app:locale',
 
-  // Auth
+  // Auth (legacy — preserved)
   AUTH_SESSION:       'apex:auth:session',
   AUTH_USER:          'apex:auth:user',
   AUTH_ROLE:          'apex:auth:role',
 
-  // Fleet
+  // Fleet (legacy — preserved for internal compat)
   FLEET_ACTIVE_VIEW:  'apex:fleet:activeView',
   FLEET_FILTERS:      'apex:fleet:filters',
   FLEET_SELECTED:     'apex:fleet:selected',
 
-  // Map
+  // Map (legacy — preserved)
   MAP_PROVIDER:       'apex:map:provider',
   MAP_CENTER:         'apex:map:center',
   MAP_ZOOM:           'apex:map:zoom',
   MAP_LAYER:          'apex:map:layer',
 
-  // AI
+  // AI (legacy — preserved)
   AI_PROVIDER:        'apex:ai:provider',
   AI_MODEL:           'apex:ai:model',
   AI_CONFIG:          'apex:ai:config',
 
-  // Driver
+  // Driver/Responder (legacy — preserved for PWA sync)
   DRIVER_SELECTED:    'apex:driver:selected',
   DRIVER_SESSION:     'apex:driver:session',
 
-  // Navigation
+  // Navigation (legacy — preserved)
   NAV_ROUTE:          'apex:nav:route',
   NAV_DESTINATION:    'apex:nav:destination',
   NAV_MODE:           'apex:nav:mode',
 
-  // Notifications
+  // Notifications (legacy — preserved)
   NOTIF_QUEUE:        'apex:notif:queue',
   NOTIF_PREFS:        'apex:notif:prefs',
+
+  // ── TrustSheild OS™ Dashboard Keys (Run 2) ────────────────
+  TS_DASHBOARD_TAB:   'trustsheild:dashboard:activeTab',
+  TS_CASES:           'trustsheild_demo_cases',
+  TS_TASKS:           'trustsheild_demo_tasks',
+  TS_PWAS:            'trustsheild_demo_pwas',
+  TS_TIMELINE:        'trustsheild_demo_timeline',
+  TS_DRAFTS:          'trustsheild_demo_drafts',
+  TS_UPDATES:         'trustsheild_demo_updates',
+  TS_FEED:            'trustsheild:dashboard:feed',
+  TS_MODE:            'trustsheild:app:mode',   // 'demo' | 'live'
 }
 
 // ─── Persist Helpers ──────────────────────────────────────────
@@ -68,51 +86,37 @@ const persist = {
     try {
       localStorage.setItem(key, JSON.stringify(value))
     } catch (e) {
-      console.warn('[Apex:Storage] persist.set failed:', key, e)
+      console.warn('[TrustSheild:Storage] persist.set failed:', key, e)
     }
   },
   remove: (key) => {
-    try {
-      localStorage.removeItem(key)
-    } catch {
-      // silent
-    }
+    try { localStorage.removeItem(key) } catch { /* silent */ }
   },
   clear: (prefix = 'apex:') => {
     try {
       Object.keys(localStorage)
         .filter(k => k.startsWith(prefix))
         .forEach(k => localStorage.removeItem(k))
-    } catch {
-      // silent
-    }
+    } catch { /* silent */ }
   }
 }
 
 // ─── App Store ────────────────────────────────────────────────
 export const useAppStore = create((set, get) => ({
-  // ── State ──
   theme:           persist.get(STORAGE_KEYS.APP_THEME, 'dark'),
-  sidebarExpanded: false, // burger mode — always starts closed
+  sidebarExpanded: false,
   locale:          persist.get(STORAGE_KEYS.APP_LOCALE, 'en'),
-  systemStatus:    'online',   // 'online' | 'offline' | 'degraded'
+  systemStatus:    'online',
   notifications:   [],
   alerts:          [],
 
-  // ── Actions ──
-  setTheme: (theme) => {
-    persist.set(STORAGE_KEYS.APP_THEME, theme)
-    set({ theme })
-  },
+  setTheme: (theme) => { persist.set(STORAGE_KEYS.APP_THEME, theme); set({ theme }) },
   toggleSidebar: () => {
     const next = !get().sidebarExpanded
     persist.set(STORAGE_KEYS.APP_SIDEBAR, next)
     set({ sidebarExpanded: next })
   },
-  setSidebarExpanded: (val) => {
-    persist.set(STORAGE_KEYS.APP_SIDEBAR, val)
-    set({ sidebarExpanded: val })
-  },
+  setSidebarExpanded: (val) => { persist.set(STORAGE_KEYS.APP_SIDEBAR, val); set({ sidebarExpanded: val }) },
   closeSidebar: () => set({ sidebarExpanded: false }),
   openSidebar:  () => set({ sidebarExpanded: true }),
   setSystemStatus: (status) => set({ systemStatus: status }),
@@ -123,33 +127,20 @@ export const useAppStore = create((set, get) => ({
   addAlert: (alert) => set(s => ({
     alerts: [{ id: Date.now(), ...alert }, ...s.alerts].slice(0, 20)
   })),
-  dismissAlert: (id) => set(s => ({
-    alerts: s.alerts.filter(a => a.id !== id)
-  })),
+  dismissAlert: (id) => set(s => ({ alerts: s.alerts.filter(a => a.id !== id) })),
 }))
 
 // ─── Auth Store ───────────────────────────────────────────────
 export const useAuthStore = create((set) => ({
-  // ── State ──
-  session:       persist.get(STORAGE_KEYS.AUTH_SESSION, null),
-  user:          persist.get(STORAGE_KEYS.AUTH_USER, null),
-  role:          persist.get(STORAGE_KEYS.AUTH_ROLE, null),
-  isLoading:     false,
+  session:         persist.get(STORAGE_KEYS.AUTH_SESSION, null),
+  user:            persist.get(STORAGE_KEYS.AUTH_USER, null),
+  role:            persist.get(STORAGE_KEYS.AUTH_ROLE, null),
+  isLoading:       false,
   isAuthenticated: false,
 
-  // ── Actions ──
-  setSession: (session) => {
-    persist.set(STORAGE_KEYS.AUTH_SESSION, session)
-    set({ session, isAuthenticated: !!session })
-  },
-  setUser: (user) => {
-    persist.set(STORAGE_KEYS.AUTH_USER, user)
-    set({ user })
-  },
-  setRole: (role) => {
-    persist.set(STORAGE_KEYS.AUTH_ROLE, role)
-    set({ role })
-  },
+  setSession: (session) => { persist.set(STORAGE_KEYS.AUTH_SESSION, session); set({ session, isAuthenticated: !!session }) },
+  setUser:    (user)    => { persist.set(STORAGE_KEYS.AUTH_USER, user); set({ user }) },
+  setRole:    (role)    => { persist.set(STORAGE_KEYS.AUTH_ROLE, role); set({ role }) },
   setLoading: (isLoading) => set({ isLoading }),
   clearAuth: () => {
     persist.remove(STORAGE_KEYS.AUTH_SESSION)
@@ -159,9 +150,8 @@ export const useAuthStore = create((set) => ({
   }
 }))
 
-// ─── Fleet Store ──────────────────────────────────────────────
+// ─── Fleet Store (legacy name — preserved for PWA/sync compat) ─
 export const useFleetStore = create((set) => ({
-  // ── State ──
   vehicles:      [],
   activeVehicle: null,
   activeView:    persist.get(STORAGE_KEYS.FLEET_ACTIVE_VIEW, 'grid'),
@@ -170,227 +160,192 @@ export const useFleetStore = create((set) => ({
   isLoading:     false,
   telemetry:     {},
 
-  // ── Actions ──
-  setVehicles: (vehicles) => set({ vehicles }),
+  setVehicles:      (vehicles) => set({ vehicles }),
   setActiveVehicle: (v) => set({ activeVehicle: v }),
-  setActiveView: (view) => {
-    persist.set(STORAGE_KEYS.FLEET_ACTIVE_VIEW, view)
-    set({ activeView: view })
-  },
-  setFilters: (filters) => {
-    persist.set(STORAGE_KEYS.FLEET_FILTERS, filters)
-    set({ filters })
-  },
-  setSelectedIds: (ids) => {
-    persist.set(STORAGE_KEYS.FLEET_SELECTED, ids)
-    set({ selectedIds: ids })
-  },
+  setActiveView: (view) => { persist.set(STORAGE_KEYS.FLEET_ACTIVE_VIEW, view); set({ activeView: view }) },
+  setFilters: (filters) => { persist.set(STORAGE_KEYS.FLEET_FILTERS, filters); set({ filters }) },
+  setSelectedIds: (ids) => { persist.set(STORAGE_KEYS.FLEET_SELECTED, ids); set({ selectedIds: ids }) },
   setLoading: (isLoading) => set({ isLoading }),
   updateTelemetry: (vehicleId, data) => set(s => ({
     telemetry: { ...s.telemetry, [vehicleId]: { ...s.telemetry[vehicleId], ...data, ts: Date.now() } }
   }))
 }))
 
-// ─── Map Store ────────────────────────────────────────────────
+// ─── Map Store (legacy — preserved) ──────────────────────────
 export const useMapStore = create((set) => ({
-  // ── State ──
-  provider:   persist.get(STORAGE_KEYS.MAP_PROVIDER, 'osm'),  // OSM is always-on; upgrades auto when GH/Google key set
-  center:     persist.get(STORAGE_KEYS.MAP_CENTER, { lat: 51.5074, lng: -0.1278 }),
-  zoom:       persist.get(STORAGE_KEYS.MAP_ZOOM, 11),
-  layer:      persist.get(STORAGE_KEYS.MAP_LAYER, 'tactical'),
-  isLoaded:   false,
-  markers:    [],
-  routes:     [],
-  geofences:  [],
+  provider:  persist.get(STORAGE_KEYS.MAP_PROVIDER, 'osm'),
+  center:    persist.get(STORAGE_KEYS.MAP_CENTER, { lat: 51.5074, lng: -0.1278 }),
+  zoom:      persist.get(STORAGE_KEYS.MAP_ZOOM, 11),
+  layer:     persist.get(STORAGE_KEYS.MAP_LAYER, 'tactical'),
+  isLoaded:  false,
+  markers:   [],
+  routes:    [],
+  geofences: [],
 
-  // ── Actions ──
-  setProvider: (provider) => {
-    persist.set(STORAGE_KEYS.MAP_PROVIDER, provider)
-    set({ provider })
-  },
-  setCenter: (center) => {
-    persist.set(STORAGE_KEYS.MAP_CENTER, center)
-    set({ center })
-  },
-  setZoom: (zoom) => {
-    persist.set(STORAGE_KEYS.MAP_ZOOM, zoom)
-    set({ zoom })
-  },
-  setLayer: (layer) => {
-    persist.set(STORAGE_KEYS.MAP_LAYER, layer)
-    set({ layer })
-  },
-  setLoaded: (isLoaded) => set({ isLoaded }),
-  setMarkers: (markers) => set({ markers }),
-  addMarker: (m) => set(s => ({ markers: [...s.markers, m] })),
-  setRoutes: (routes) => set({ routes }),
-  setGeofences: (geofences) => set({ geofences })
+  setProvider:  (provider) => { persist.set(STORAGE_KEYS.MAP_PROVIDER, provider); set({ provider }) },
+  setCenter:    (center)   => { persist.set(STORAGE_KEYS.MAP_CENTER, center); set({ center }) },
+  setZoom:      (zoom)     => { persist.set(STORAGE_KEYS.MAP_ZOOM, zoom); set({ zoom }) },
+  setLayer:     (layer)    => { persist.set(STORAGE_KEYS.MAP_LAYER, layer); set({ layer }) },
+  setLoaded:    (isLoaded) => set({ isLoaded }),
+  setMarkers:   (markers)  => set({ markers }),
+  addMarker:    (m)        => set(s => ({ markers: [...s.markers, m] })),
+  setRoutes:    (routes)   => set({ routes }),
+  setGeofences: (geofences) => set({ geofences }),
 }))
 
-// ─── AI Store ─────────────────────────────────────────────────
+// ─── AI Store (legacy — preserved) ───────────────────────────
 export const useAIStore = create((set) => ({
-  // ── State ──
   provider:       persist.get(STORAGE_KEYS.AI_PROVIDER, 'openai'),
   model:          persist.get(STORAGE_KEYS.AI_MODEL, null),
   config:         persist.get(STORAGE_KEYS.AI_CONFIG, {}),
-  status:         'idle',   // 'idle' | 'loading' | 'streaming' | 'error'
+  status:         'idle',
   activeModule:   null,
   tokenUsage:     { prompt: 0, completion: 0, total: 0 },
   costEstimate:   0,
   fallbackActive: false,
 
-  // ── Actions ──
-  setProvider: (provider) => {
-    persist.set(STORAGE_KEYS.AI_PROVIDER, provider)
-    set({ provider })
-  },
-  setModel: (model) => {
-    persist.set(STORAGE_KEYS.AI_MODEL, model)
-    set({ model })
-  },
-  setConfig: (config) => {
-    persist.set(STORAGE_KEYS.AI_CONFIG, config)
-    set({ config })
-  },
-  setStatus: (status) => set({ status }),
+  setProvider:  (provider) => { persist.set(STORAGE_KEYS.AI_PROVIDER, provider); set({ provider }) },
+  setModel:     (model)    => { persist.set(STORAGE_KEYS.AI_MODEL, model); set({ model }) },
+  setConfig:    (config)   => { persist.set(STORAGE_KEYS.AI_CONFIG, config); set({ config }) },
+  setStatus:    (status)   => set({ status }),
   setActiveModule: (module) => set({ activeModule: module }),
   updateTokenUsage: (usage) => set(s => ({
     tokenUsage: {
       prompt:     s.tokenUsage.prompt + (usage.prompt || 0),
       completion: s.tokenUsage.completion + (usage.completion || 0),
-      total:      s.tokenUsage.total + (usage.total || 0)
+      total:      s.tokenUsage.total + (usage.total || 0),
     }
   })),
   setCostEstimate: (cost) => set({ costEstimate: cost }),
-  setFallbackActive: (val) => set({ fallbackActive: val })
+  setFallbackActive: (val) => set({ fallbackActive: val }),
 }))
 
-// ─── Driver Store ─────────────────────────────────────────────
+// ─── Driver Store (legacy name — preserved for PWA/sync compat) ─
 export const useDriverStore = create((set) => ({
-  // ── State ──
-  drivers:        [],
-  activeDriver:   persist.get(STORAGE_KEYS.DRIVER_SELECTED, null),
-  driverSession:  persist.get(STORAGE_KEYS.DRIVER_SESSION, null),
-  scores:         {},
-  isLoading:      false,
+  drivers:       [],
+  activeDriver:  persist.get(STORAGE_KEYS.DRIVER_SELECTED, null),
+  driverSession: persist.get(STORAGE_KEYS.DRIVER_SESSION, null),
+  scores:        {},
+  isLoading:     false,
 
-  // ── Actions ──
-  setDrivers: (drivers) => set({ drivers }),
-  setActiveDriver: (driver) => {
-    persist.set(STORAGE_KEYS.DRIVER_SELECTED, driver)
-    set({ activeDriver: driver })
-  },
-  setDriverSession: (session) => {
-    persist.set(STORAGE_KEYS.DRIVER_SESSION, session)
-    set({ driverSession: session })
-  },
-  updateScore: (driverId, score) => set(s => ({
-    scores: { ...s.scores, [driverId]: score }
-  })),
-  setLoading: (isLoading) => set({ isLoading })
+  setDrivers:       (drivers) => set({ drivers }),
+  setActiveDriver:  (driver) => { persist.set(STORAGE_KEYS.DRIVER_SELECTED, driver); set({ activeDriver: driver }) },
+  setDriverSession: (session) => { persist.set(STORAGE_KEYS.DRIVER_SESSION, session); set({ driverSession: session }) },
+  updateScore: (driverId, score) => set(s => ({ scores: { ...s.scores, [driverId]: score } })),
+  setLoading: (isLoading) => set({ isLoading }),
 }))
 
-// ─── Navigation Store ─────────────────────────────────────────
+// ─── Navigation Store (legacy — preserved) ───────────────────
 export const useNavStore = create((set) => ({
-  // ── State ──
-  route:          persist.get(STORAGE_KEYS.NAV_ROUTE, null),
-  destination:    persist.get(STORAGE_KEYS.NAV_DESTINATION, null),
-  mode:           persist.get(STORAGE_KEYS.NAV_MODE, 'drive'),
-  isNavigating:   false,
+  route:           persist.get(STORAGE_KEYS.NAV_ROUTE, null),
+  destination:     persist.get(STORAGE_KEYS.NAV_DESTINATION, null),
+  mode:            persist.get(STORAGE_KEYS.NAV_MODE, 'drive'),
+  isNavigating:    false,
   currentPosition: null,
-  eta:            null,
-  distanceLeft:   null,
+  eta:             null,
+  distanceLeft:    null,
   turnInstructions: [],
 
-  // ── Actions ──
-  setRoute: (route) => {
-    persist.set(STORAGE_KEYS.NAV_ROUTE, route)
-    set({ route })
-  },
-  setDestination: (dest) => {
-    persist.set(STORAGE_KEYS.NAV_DESTINATION, dest)
-    set({ destination: dest })
-  },
+  setRoute:       (route) => { persist.set(STORAGE_KEYS.NAV_ROUTE, route); set({ route }) },
+  setDestination: (dest)  => { persist.set(STORAGE_KEYS.NAV_DESTINATION, dest); set({ destination: dest }) },
+  setMode:        (mode)  => { persist.set(STORAGE_KEYS.NAV_MODE, mode); set({ mode }) },
+  setNavigating:  (val)   => set({ isNavigating: val }),
+  setCurrentPosition: (pos) => set({ currentPosition: pos }),
+  setEta:         (eta)   => set({ eta }),
+  setDistanceLeft: (d)    => set({ distanceLeft: d }),
+  setTurnInstructions: (t) => set({ turnInstructions: t }),
+}))
+
+// ─── TrustSheild OS™ Dashboard Store (Run 2) ─────────────────
+// All TrustSheild-specific dashboard state lives here.
+// Namespace: trustsheild: / trustsheild_demo_*
+// This is additive — does NOT replace or alter any legacy store.
+export const useTrustStore = create((set, get) => ({
+  // ── App Mode ──────────────────────────────────────────────
+  mode: persist.get(STORAGE_KEYS.TS_MODE, 'demo'), // 'demo' | 'live'
+
+  // ── Dashboard Tab ─────────────────────────────────────────
+  activeTab: persist.get(STORAGE_KEYS.TS_DASHBOARD_TAB, 'overview'),
+
+  // ── Core Data Collections ─────────────────────────────────
+  cases:       persist.get(STORAGE_KEYS.TS_CASES,    null), // null = use demo seed
+  tasks:       persist.get(STORAGE_KEYS.TS_TASKS,    null),
+  pwas:        persist.get(STORAGE_KEYS.TS_PWAS,     null),
+  timeline:    persist.get(STORAGE_KEYS.TS_TIMELINE, null),
+  drafts:      persist.get(STORAGE_KEYS.TS_DRAFTS,   null),
+  updates:     persist.get(STORAGE_KEYS.TS_UPDATES,  null),
+  feedItems:   persist.get(STORAGE_KEYS.TS_FEED,     null),
+
+  // ── Actions ───────────────────────────────────────────────
   setMode: (mode) => {
-    persist.set(STORAGE_KEYS.NAV_MODE, mode)
+    persist.set(STORAGE_KEYS.TS_MODE, mode)
     set({ mode })
   },
-  setNavigating: (val) => set({ isNavigating: val }),
-  setCurrentPosition: (pos) => set({ currentPosition: pos }),
-  setEta: (eta) => set({ eta }),
-  setDistanceLeft: (dist) => set({ distanceLeft: dist }),
-  setTurnInstructions: (instr) => set({ turnInstructions: instr }),
-  clearNavigation: () => {
-    persist.remove(STORAGE_KEYS.NAV_ROUTE)
-    persist.remove(STORAGE_KEYS.NAV_DESTINATION)
-    set({ route: null, destination: null, isNavigating: false, eta: null, distanceLeft: null, turnInstructions: [] })
-  }
+
+  setActiveTab: (tab) => {
+    persist.set(STORAGE_KEYS.TS_DASHBOARD_TAB, tab)
+    set({ activeTab: tab })
+  },
+
+  // Seed with demo data if not already set
+  seedDemoData: (demoData) => {
+    const s = get()
+    const next = {}
+    if (!s.cases)     { next.cases     = demoData.cases;     persist.set(STORAGE_KEYS.TS_CASES,    demoData.cases)    }
+    if (!s.tasks)     { next.tasks     = demoData.tasks;     persist.set(STORAGE_KEYS.TS_TASKS,    demoData.tasks)    }
+    if (!s.pwas)      { next.pwas      = demoData.pwas;      persist.set(STORAGE_KEYS.TS_PWAS,     demoData.pwas)     }
+    if (!s.timeline)  { next.timeline  = demoData.timeline;  persist.set(STORAGE_KEYS.TS_TIMELINE, demoData.timeline) }
+    if (!s.drafts)    { next.drafts    = demoData.drafts;    persist.set(STORAGE_KEYS.TS_DRAFTS,   demoData.drafts)   }
+    if (!s.updates)   { next.updates   = demoData.updates;   persist.set(STORAGE_KEYS.TS_UPDATES,  demoData.updates)  }
+    if (!s.feedItems) { next.feedItems = demoData.feedItems; persist.set(STORAGE_KEYS.TS_FEED,     demoData.feedItems)}
+    if (Object.keys(next).length) set(next)
+  },
+
+  // Case actions
+  updateCase: (id, patch) => {
+    const cases = get().cases?.map(c => c.id === id ? { ...c, ...patch, updatedAt: new Date().toISOString() } : c) || []
+    persist.set(STORAGE_KEYS.TS_CASES, cases)
+    set({ cases })
+  },
+
+  // Task actions
+  updateTask: (id, patch) => {
+    const tasks = get().tasks?.map(t => t.id === id ? { ...t, ...patch, updatedAt: new Date().toISOString() } : t) || []
+    persist.set(STORAGE_KEYS.TS_TASKS, tasks)
+    set({ tasks })
+  },
+
+  // Feed — prepend a new item
+  addFeedItem: (item) => {
+    const feedItems = [{ id: Date.now(), ts: new Date().toISOString(), ...item }, ...(get().feedItems || [])].slice(0, 50)
+    persist.set(STORAGE_KEYS.TS_FEED, feedItems)
+    set({ feedItems })
+  },
+
+  // Draft actions
+  updateDraft: (id, patch) => {
+    const drafts = get().drafts?.map(d => d.id === id ? { ...d, ...patch, updatedAt: new Date().toISOString() } : d) || []
+    persist.set(STORAGE_KEYS.TS_DRAFTS, drafts)
+    set({ drafts })
+  },
+
+  // Hard reset demo data (clears and re-seeds)
+  resetToDemo: (demoData) => {
+    persist.set(STORAGE_KEYS.TS_CASES,    demoData.cases)
+    persist.set(STORAGE_KEYS.TS_TASKS,    demoData.tasks)
+    persist.set(STORAGE_KEYS.TS_PWAS,     demoData.pwas)
+    persist.set(STORAGE_KEYS.TS_TIMELINE, demoData.timeline)
+    persist.set(STORAGE_KEYS.TS_DRAFTS,   demoData.drafts)
+    persist.set(STORAGE_KEYS.TS_UPDATES,  demoData.updates)
+    persist.set(STORAGE_KEYS.TS_FEED,     demoData.feedItems)
+    set({
+      cases:     demoData.cases,
+      tasks:     demoData.tasks,
+      pwas:      demoData.pwas,
+      timeline:  demoData.timeline,
+      drafts:    demoData.drafts,
+      updates:   demoData.updates,
+      feedItems: demoData.feedItems,
+    })
+  },
 }))
-
-// ─── Realtime Store ───────────────────────────────────────────
-export const useRealtimeStore = create((set) => ({
-  connected:       false,
-  channelStatuses: {},
-  livePositions:   {},
-  liveEvents:      [],
-
-  setConnected: (connected) => set({ connected }),
-  setChannelStatus: (channel, status) => set(s => ({
-    channelStatuses: { ...s.channelStatuses, [channel]: status }
-  })),
-  updateLivePosition: (vehicleId, position) => set(s => ({
-    livePositions: { ...s.livePositions, [vehicleId]: { ...position, ts: Date.now() } }
-  })),
-  addLiveEvent: (event) => set(s => ({
-    liveEvents: [{ id: Date.now(), ...event }, ...s.liveEvents].slice(0, 100)
-  })),
-  clearLiveEvents: () => set({ liveEvents: [] })
-}))
-
-// ─── Root Storage API ─────────────────────────────────────────
-// Unified access to persist helpers
-export const Storage = persist
-
-// ─── Store Selectors (convenience) ───────────────────────────
-export const selectors = {
-  app: {
-    theme:           s => s.theme,
-    sidebarExpanded: s => s.sidebarExpanded,
-    systemStatus:    s => s.systemStatus,
-    notifications:   s => s.notifications,
-    alerts:          s => s.alerts,
-  },
-  auth: {
-    user:            s => s.user,
-    role:            s => s.role,
-    isAuthenticated: s => s.isAuthenticated,
-    isLoading:       s => s.isLoading,
-  },
-  fleet: {
-    vehicles:        s => s.vehicles,
-    activeVehicle:   s => s.activeVehicle,
-    telemetry:       s => s.telemetry,
-    isLoading:       s => s.isLoading,
-  },
-  ai: {
-    provider:        s => s.provider,
-    model:           s => s.model,
-    status:          s => s.status,
-    fallbackActive:  s => s.fallbackActive,
-    tokenUsage:      s => s.tokenUsage,
-  }
-}
-
-export default {
-  STORAGE_KEYS,
-  Storage,
-  useAppStore,
-  useAuthStore,
-  useFleetStore,
-  useMapStore,
-  useAIStore,
-  useDriverStore,
-  useNavStore,
-  useRealtimeStore,
-  selectors
-}
