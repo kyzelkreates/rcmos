@@ -1132,3 +1132,149 @@ export const TASK_SEED_DATA = {
 }
 
 export { TASK_TEMPLATES }
+
+// ============================================================
+// TrustSheild OS™ — PWA Identity & Pairing Seed (Run 5)
+// ============================================================
+// ⚠️  DEMO DATA ONLY — Pairing codes are local simulation IDs.
+//     Secure authentication is added in later backend runs.
+// ============================================================
+
+export const SEED_PWA_IDENTITIES = [
+  {
+    id: 'TS-PWA-0001',
+    pairingCode: 'TS-7K2F-91QX',
+    displayName: 'Sarah K.',
+    organisationName: 'Meridian Cafe Group / Oakhaven Hotels',
+    roleType: 'PR Lead',
+    contactLabel: 'Primary PR Contact',
+    avatar: 'SK',
+    linkedCaseIds: ['case-001', 'case-004'],
+    assignedTaskIds: ['tsk-seed-002', 'tsk-seed-005'],
+    syncStatus: 'Demo Local',
+    backendStatus: 'Not Configured',
+    configurationStatus: 'Demo Configured',
+    permissions: { canSubmitUpdates: true, canAddEvidence: true, canApproveDrafts: false, canRequestEscalation: true },
+    dashboardInstruction: 'Review urgent response actions and submit situation updates. Escalate anything that requires legal input.',
+    status: 'Active',
+    source: 'demo',
+    notes: 'Primary on-site contact for Meridian Cafe review crisis.',
+    createdAt: ago(500),
+    updatedAt: ago(25),
+    _demo: true,
+  },
+  {
+    id: 'TS-PWA-0002',
+    pairingCode: 'TS-4G8P-22LD',
+    displayName: 'Marcus T.',
+    organisationName: 'Vantage Fintech / Layla Voss',
+    roleType: 'Responder',
+    contactLabel: 'Crisis Response Lead',
+    avatar: 'MT',
+    linkedCaseIds: ['case-002', 'case-006'],
+    assignedTaskIds: ['tsk-seed-001'],
+    syncStatus: 'Demo Local',
+    backendStatus: 'Not Configured',
+    configurationStatus: 'Demo Configured',
+    permissions: { canSubmitUpdates: true, canAddEvidence: true, canApproveDrafts: true, canRequestEscalation: true },
+    dashboardInstruction: 'Review and approve draft holding statement before deadline. Escalate if legal review required.',
+    status: 'Active',
+    source: 'demo',
+    notes: 'Handles social media complaint response for Vantage Fintech.',
+    createdAt: ago(480),
+    updatedAt: ago(8),
+    _demo: true,
+  },
+  {
+    id: 'TS-PWA-0003',
+    pairingCode: 'TS-R3NX-05WM',
+    displayName: 'Dr. Priya N.',
+    organisationName: 'Elara Health / Sable Agency',
+    roleType: 'Legal Contact',
+    contactLabel: 'Legal Sign-off Contact',
+    avatar: 'PN',
+    linkedCaseIds: ['case-003', 'case-007'],
+    assignedTaskIds: ['tsk-seed-004'],
+    syncStatus: 'Demo Local',
+    backendStatus: 'Not Configured',
+    configurationStatus: 'Demo Configured',
+    permissions: { canSubmitUpdates: true, canAddEvidence: true, canApproveDrafts: true, canRequestEscalation: true },
+    dashboardInstruction: 'Legal review and approval required before any response to press inaccuracy is submitted.',
+    status: 'Active',
+    source: 'demo',
+    notes: 'Legal advisor for Elara Health press correction case.',
+    createdAt: ago(460),
+    updatedAt: ago(95),
+    _demo: true,
+  },
+  {
+    id: 'TS-PWA-0004',
+    pairingCode: 'TS-B6TQ-77HZ',
+    displayName: 'James W.',
+    organisationName: 'NordVista Capital',
+    roleType: 'Staff Member',
+    contactLabel: 'Internal Briefing Contact',
+    avatar: 'JW',
+    linkedCaseIds: ['case-005'],
+    assignedTaskIds: ['tsk-seed-003'],
+    syncStatus: 'Demo Local',
+    backendStatus: 'Not Configured',
+    configurationStatus: 'Demo Configured',
+    permissions: { canSubmitUpdates: true, canAddEvidence: false, canApproveDrafts: false, canRequestEscalation: true },
+    dashboardInstruction: 'Confirm receipt of regulatory inquiry brief. Flag any concerns immediately.',
+    status: 'Active',
+    source: 'demo',
+    notes: 'Internal staff contact for regulatory disclosure handling.',
+    createdAt: ago(440),
+    updatedAt: ago(12),
+    _demo: true,
+  },
+  {
+    id: 'TS-PWA-0005',
+    pairingCode: 'TS-C9KD-33VF',
+    displayName: 'Agency Contact',
+    organisationName: 'Sable & Partners',
+    roleType: 'Agency Lead',
+    contactLabel: 'Agency Communications Lead',
+    avatar: 'AC',
+    linkedCaseIds: [],
+    assignedTaskIds: [],
+    syncStatus: 'Offline',
+    backendStatus: 'Not Configured',
+    configurationStatus: 'Not Configured',
+    permissions: { canSubmitUpdates: false, canAddEvidence: false, canApproveDrafts: false, canRequestEscalation: false },
+    dashboardInstruction: '',
+    status: 'Active',
+    source: 'demo',
+    notes: 'Agency contact — pending case assignment.',
+    createdAt: ago(420),
+    updatedAt: ago(480),
+    _demo: true,
+  },
+]
+
+// ─── Pairing code → PWA ID map ────────────────────────────────
+export const SEED_PAIRING_CODES = {
+  'TS-7K2F-91QX': 'TS-PWA-0001',
+  'TS-4G8P-22LD': 'TS-PWA-0002',
+  'TS-R3NX-05WM': 'TS-PWA-0003',
+  'TS-B6TQ-77HZ': 'TS-PWA-0004',
+  'TS-C9KD-33VF': 'TS-PWA-0005',
+}
+
+// ─── Default per-PWA config ───────────────────────────────────
+export const SEED_PWA_CONFIG = {
+  'TS-PWA-0001': { allowedTaskTypes: 'all', status: 'Active', escalationPermission: true,  draftApprovalPermission: false, evidencePermission: true  },
+  'TS-PWA-0002': { allowedTaskTypes: 'all', status: 'Active', escalationPermission: true,  draftApprovalPermission: true,  evidencePermission: true  },
+  'TS-PWA-0003': { allowedTaskTypes: 'all', status: 'Active', escalationPermission: true,  draftApprovalPermission: true,  evidencePermission: true  },
+  'TS-PWA-0004': { allowedTaskTypes: 'all', status: 'Active', escalationPermission: true,  draftApprovalPermission: false, evidencePermission: false },
+  'TS-PWA-0005': { allowedTaskTypes: 'all', status: 'Active', escalationPermission: false, draftApprovalPermission: false, evidencePermission: false },
+}
+
+// ─── Composed identity seed export ───────────────────────────
+export const IDENTITY_SEED_DATA = {
+  pwaIdentities: SEED_PWA_IDENTITIES,
+  pairingCodes:  SEED_PAIRING_CODES,
+  pwaConfig:     SEED_PWA_CONFIG,
+  defaultPwaId:  'TS-PWA-0001',
+}

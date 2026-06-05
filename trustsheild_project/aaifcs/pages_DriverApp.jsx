@@ -37,8 +37,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Icon from './components_ui_Icon'
-import { usePwaStore, useTaskStore } from './core_storage'
-import { PWA_DEMO_DATA, TASK_SEED_DATA } from './data_trustsheild_demo'
+import { usePwaStore, useTaskStore, useIdentityStore } from './core_storage'
+import { PWA_DEMO_DATA, TASK_SEED_DATA, IDENTITY_SEED_DATA } from './data_trustsheild_demo'
 import APP_CONFIG from './config_app'
 
 // ─── Colour maps ──────────────────────────────────────────────
@@ -277,6 +277,7 @@ const PWA_TABS = [
   { key: 'evidence',  label: 'Evidence', icon: 'FileText'    },
   { key: 'drafts',    label: 'Drafts',   icon: 'FileEdit'    },
   { key: 'escalate',  label: 'Escalate', icon: 'AlertOctagon'},
+  { key: 'identity',  label: 'Identity', icon: 'UserCircle'  },
   { key: 'sync',      label: 'Sync',     icon: 'Wifi'        },
 ]
 
@@ -582,7 +583,7 @@ const TASK_BTN_LABEL = {
   'Complete':     { label: 'Complete ✓', icon: 'CheckCircle', variant: 'ghost' },
 }
 
-function TasksScreen({ pwaTasks, updateTask, onTab }) {
+function TasksScreen({ pwaTasks, updateTask, onTab, activePwaId }) {
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState('all')
   const { configTasks, pwaUpdateStatus, seedTaskData } = useTaskStore()
@@ -592,8 +593,11 @@ function TasksScreen({ pwaTasks, updateTask, onTab }) {
 
   // Merge configTasks (dashboard-created) with legacy pwaTasks.
   // configTasks take priority — shown first, identified by source:'demo'.
-  const CURRENT_PWA_ID = 'pwa-001' // demo — Run 5 will replace with real PWA ID
-  const dashboardTasks = (configTasks || []).filter(t => t.assignedPwaId === CURRENT_PWA_ID)
+  const CURRENT_PWA_ID = activePwaId || 'TS-PWA-0001' // live from useIdentityStore — Run 5
+  // Match by TS-PWA-XXXX ID (Run 5) OR legacy pwa-00X ID (Run 1-4 seeds)
+  const LEGACY_MAP = { 'TS-PWA-0001': 'pwa-001', 'TS-PWA-0002': 'pwa-002', 'TS-PWA-0003': 'pwa-003', 'TS-PWA-0004': 'pwa-004', 'TS-PWA-0005': 'pwa-005' }
+  const legacyId = LEGACY_MAP[CURRENT_PWA_ID] || null
+  const dashboardTasks = (configTasks || []).filter(t => t.assignedPwaId === CURRENT_PWA_ID || (legacyId && t.assignedPwaId === legacyId))
   const allTasks = [
     ...dashboardTasks,
     ...(pwaTasks || []).filter(pt => !dashboardTasks.some(dt => dt.id === pt.id)),
@@ -1273,6 +1277,176 @@ function SyncScreen({ profile }) {
 // ═══════════════════════════════════════════════════════════════
 // ROOT — TrustSheild Response PWA
 // ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN 9 — PWA Identity & Pairing (Run 5)
+// ═══════════════════════════════════════════════════════════════
+function IdentityScreen({ onTab }) {
+  const { pwaIdentities, currentPwaId, pairByCode, setCurrentPwaId, seedIdentities } = useIdentityStore()
+
+  // Seed identities on mount if needed
+  useEffect(() => { seedIdentities(IDENTITY_SEED_DATA) }, [])
+
+  const currentIdentity = pwaIdentities?.find(i => i.id === currentPwaId) || null
+  const [codeInput,  setCodeInput]  = useState('')
+  const [pairResult, setPairResult] = useState(null)  // null | { success, error?, identity? }
+  const [pairing,    setPairing]    = useState(false)
+
+  const handlePair = () => {
+    if (!codeInput.trim()) return
+    setPairing(true)
+    setTimeout(() => {
+      const result = pairByCode(codeInput)
+      setPairResult(result)
+      if (result.success) setCodeInput('')
+      setPairing(false)
+    }, 600)
+  }
+
+  const handleSelect = (id) => {
+    setCurrentPwaId(id)
+    setPairResult({ success: true, identity: pwaIdentities?.find(i => i.id === id) })
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Current identity */}
+      {currentIdentity ? (
+        <Card glow>
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#37ff8b' }}>Active Identity</span>
+              <DemoBadge />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold" style={{ background: 'rgba(55,255,139,0.1)', border: '1px solid rgba(55,255,139,0.25)', color: '#37ff8b', fontSize: '0.9rem' }}>
+                {currentIdentity.avatar}
+              </div>
+              <div>
+                <div className="text-base font-bold" style={{ color: '#f5f5f2' }}>{currentIdentity.displayName}</div>
+                <div className="text-xs" style={{ color: '#5a5f6b' }}>{currentIdentity.roleType} · {currentIdentity.organisationName}</div>
+              </div>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              {[
+                { label: 'PWA ID',        value: currentIdentity.id,           mono: true,  color: '#d6a84f' },
+                { label: 'Pairing Code',  value: currentIdentity.pairingCode,  mono: true,  color: '#d6a84f' },
+                { label: 'Sync Status',   value: currentIdentity.syncStatus,   mono: false, color: '#37ff8b' },
+                { label: 'Backend',       value: currentIdentity.backendStatus, mono: false, color: '#5a5f6b' },
+                { label: 'Role',          value: currentIdentity.roleType,     mono: false, color: '#c8ccd2' },
+              ].map(r => (
+                <div key={r.label} className="flex justify-between items-center py-1.5" style={{ borderBottom: '1px solid rgba(214,168,79,0.06)' }}>
+                  <span style={{ color: '#5a5f6b' }}>{r.label}</span>
+                  <span className={r.mono ? 'font-mono font-bold' : 'font-medium'} style={{ color: r.color }}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+            {currentIdentity.dashboardInstruction && (
+              <div className="p-2.5 rounded-xl" style={{ background: 'rgba(214,168,79,0.04)', border: '1px solid rgba(214,168,79,0.1)' }}>
+                <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#5a5f6b' }}>Dashboard Instruction</div>
+                <p className="text-xs" style={{ color: '#a8adb7' }}>{currentIdentity.dashboardInstruction}</p>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 p-2 rounded-lg" style={{ background: 'rgba(143,92,255,0.06)', border: '1px solid rgba(143,92,255,0.15)' }}>
+              <Icon name="Info" size={11} style={{ color: '#8f5cff', flexShrink: 0 }} />
+              <span className="text-[10px]" style={{ color: '#8f5cff' }}>Demo pairing — backend live sync is added in later runs.</span>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card>
+          <div className="flex flex-col items-center py-8 gap-3">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(214,168,79,0.06)', border: '1px solid rgba(214,168,79,0.1)' }}>
+              <Icon name="UserCircle" size={24} style={{ color: 'rgba(214,168,79,0.3)' }} />
+            </div>
+            <div className="text-sm font-medium text-center" style={{ color: '#5a5f6b' }}>No identity loaded.</div>
+            <div className="text-xs text-center" style={{ color: '#3a3f4b' }}>Enter a demo pairing code or select an identity below.</div>
+          </div>
+        </Card>
+      )}
+
+      {/* Pairing code entry */}
+      <Card>
+        <CardHeader icon="Key" iconColor="#d6a84f" title="Enter Pairing Code" subtitle="Demo/local — not secure live auth" />
+        <div className="p-4 space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#5a5f6b' }}>Demo Pairing Code</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={codeInput}
+                onChange={e => { setCodeInput(e.target.value.toUpperCase()); setPairResult(null) }}
+                placeholder="TS-XXXX-XXXX"
+                maxLength={12}
+                className="flex-1 rounded-xl text-sm font-mono"
+                style={{ background: 'rgba(13,13,18,0.8)', border: '1px solid rgba(214,168,79,0.2)', padding: '12px 14px', color: '#d6a84f', outline: 'none', letterSpacing: '0.05em', fontFamily: 'monospace' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(214,168,79,0.5)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(214,168,79,0.2)'}
+                onKeyDown={e => e.key === 'Enter' && handlePair()}
+              />
+              <TapButton onClick={handlePair} variant="gold" disabled={!codeInput.trim() || pairing} loading={pairing}>
+                <Icon name="Key" size={15} />
+                Pair
+              </TapButton>
+            </div>
+          </div>
+
+          {pairResult && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg" style={pairResult.success ? { background: 'rgba(55,255,139,0.07)', border: '1px solid rgba(55,255,139,0.2)' } : { background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)' }}>
+              <Icon name={pairResult.success ? 'CheckCircle' : 'XCircle'} size={14} style={{ color: pairResult.success ? '#37ff8b' : '#f87171', flexShrink: 0 }} />
+              <span className="text-xs" style={{ color: pairResult.success ? '#37ff8b' : '#f87171' }}>
+                {pairResult.success ? `Paired as ${pairResult.identity?.displayName} (${pairResult.identity?.id})` : pairResult.error}
+              </span>
+            </div>
+          )}
+          <p className="text-[10px]" style={{ color: '#5a5f6b' }}>
+            Demo pairing code — backend live sync is added in later runs. This is local simulation only.
+          </p>
+        </div>
+      </Card>
+
+      {/* Demo identity selector */}
+      <Card>
+        <CardHeader icon="Users" iconColor="#8f5cff" title="Demo Identity Selector" subtitle="Demo identity selector — real secure pairing comes with backend live mode" />
+        <div className="p-3 space-y-2">
+          {pwaIdentities?.filter(i => i.status !== 'Archived').map(identity => {
+            const isActive = identity.id === currentPwaId
+            return (
+              <button key={identity.id} onClick={() => handleSelect(identity.id)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
+                style={{ background: isActive ? 'rgba(55,255,139,0.08)' : 'rgba(13,13,18,0.6)', border: `1px solid ${isActive ? 'rgba(55,255,139,0.3)' : 'rgba(214,168,79,0.08)'}` }}>
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0"
+                  style={{ background: isActive ? 'rgba(55,255,139,0.12)' : 'rgba(214,168,79,0.08)', color: isActive ? '#37ff8b' : '#d6a84f' }}>
+                  {identity.avatar}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-semibold" style={{ color: isActive ? '#f5f5f2' : '#a8adb7' }}>{identity.displayName}</div>
+                  <div className="text-[10px]" style={{ color: '#5a5f6b' }}>{identity.roleType}</div>
+                </div>
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <code className="text-[9px] font-mono" style={{ color: '#5a5f6b' }}>{identity.id}</code>
+                  {isActive && <Icon name="CheckCircle" size={14} style={{ color: '#37ff8b' }} />}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* Security notice */}
+      <div className="p-3 rounded-xl" style={{ background: 'rgba(143,92,255,0.05)', border: '1px solid rgba(143,92,255,0.15)' }}>
+        <div className="flex items-center gap-2 mb-1.5">
+          <Icon name="ShieldCheck" size={13} style={{ color: '#8f5cff' }} />
+          <span className="text-xs font-semibold" style={{ color: '#8f5cff' }}>Security Notice</span>
+        </div>
+        <p className="text-[10px] leading-relaxed" style={{ color: '#a87dff' }}>
+          Demo pairing codes are for local simulation only. Real secure user access, authentication, and multi-device sync require backend live mode.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function DriverApp() {
   const {
     activeTab, setActiveTab,
@@ -1281,11 +1455,13 @@ export default function DriverApp() {
   } = usePwaStore()
 
   const { seedTaskData } = useTaskStore()
+  const { seedIdentities, currentPwaId, pwaIdentities } = useIdentityStore()
 
   // Seed demo data on first load
   useEffect(() => {
     seedPwaDemo(PWA_DEMO_DATA)
     seedTaskData(TASK_SEED_DATA)
+    seedIdentities(IDENTITY_SEED_DATA)
   }, [])
 
   // Badge count for bottom nav
@@ -1300,11 +1476,12 @@ export default function DriverApp() {
     switch (activeTab) {
       case 'home':     return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
       case 'case':     return <CrisisBriefScreen pwaCase={pwaCase} onTab={setActiveTab} />
-      case 'tasks':    return <TasksScreen pwaTasks={pwaTasks} updateTask={updatePwaTask} onTab={setActiveTab} />
+      case 'tasks':    return <TasksScreen pwaTasks={pwaTasks} updateTask={updatePwaTask} onTab={setActiveTab} activePwaId={currentPwaId} />
       case 'update':   return <UpdateScreen addPwaUpdate={addPwaUpdate} pwaUpdates={pwaUpdates} pwaCase={pwaCase} />
       case 'evidence': return <EvidenceScreen pwaNotes={pwaNotes} addNote={addNote} pwaCase={pwaCase} />
       case 'drafts':   return <DraftsScreen pwaDraftReviews={pwaDraftReviews} updateDraftReview={updateDraftReview} />
       case 'escalate': return <EscalationScreen addEscalation={addEscalation} pwaEscalations={pwaEscalations} pwaCase={pwaCase} />
+      case 'identity': return <IdentityScreen onTab={setActiveTab} />
       case 'sync':     return <SyncScreen profile={profile} />
       default:         return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
     }

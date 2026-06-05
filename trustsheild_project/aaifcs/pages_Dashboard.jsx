@@ -33,8 +33,9 @@ import { formatDateTime, formatDate } from './utils_format'
 import APP_CONFIG from './config_app'
 import { ROUTES } from './config_routes'
 import TaskConfigPanel from './modules_tasks_TaskConfigPanel'
-import { useTaskStore } from './core_storage'
-import { TASK_SEED_DATA } from './data_trustsheild_demo'
+import PwaIdentityManager from './modules_ap3x_DriverHUD'
+import { useTaskStore, useIdentityStore } from './core_storage'
+import { TASK_SEED_DATA, IDENTITY_SEED_DATA } from './data_trustsheild_demo'
 
 // ─── Colour helpers ───────────────────────────────────────────
 const RISK_STYLES = {
@@ -202,7 +203,7 @@ const TABS = [
   { key: 'risks',       label: 'Active Risks',       icon: 'AlertTriangle' },
   { key: 'command',     label: 'Crisis Command',     icon: 'Zap' },
   { key: 'feed',        label: 'Live Feed',          icon: 'Radio' },
-  { key: 'responders',  label: 'Responders',         icon: 'Users' },
+  { key: 'responders',  label: 'PWA Identities',     icon: 'Users' },
   { key: 'tasks',       label: 'Tasks (Legacy)',      icon: 'CheckSquare' },
   { key: 'taskconfig', label: 'PWA Task Config',    icon: 'Settings'    },
   { key: 'evidence',    label: 'Evidence',           icon: 'FolderOpen' },
@@ -1107,11 +1108,13 @@ export default function Dashboard() {
   const navigate   = useNavigate()
   const { activeTab, setActiveTab, cases, tasks, pwas, timeline, drafts, updates, feedItems, seedDemoData, resetToDemo } = useTrustStore()
   const { seedTaskData, resetTaskData } = useTaskStore()
+  const { seedIdentities } = useIdentityStore()
 
   // Seed demo data on first load
   useEffect(() => {
     seedDemoData(DEMO_DATA)
     seedTaskData(TASK_SEED_DATA)
+    seedIdentities(IDENTITY_SEED_DATA)
   }, [])
 
   const data = { cases, tasks, pwas, timeline, drafts, updates, feedItems }
@@ -1194,8 +1197,8 @@ export default function Dashboard() {
       )}
 
       {activeTab === 'responders' && (
-        <SectionCard title="PWA Responders & Connected Contacts" icon="Users" iconColor="#37ff8b" subtitle="Connected response PWAs — Unique PWA ID system arriving in Run 5">
-          <RespondersSection pwas={pwas} cases={cases} />
+        <SectionCard title="PWA Identity Manager" icon="Users" iconColor="#37ff8b" subtitle="Create and manage individual PWA identities — demo/local mode">
+          <PwaIdentityManager cases={cases} />
         </SectionCard>
       )}
 

@@ -87,6 +87,13 @@ export const STORAGE_KEYS = {
   TS_TASK_ACTIVITY:    'trustsheild_task_activity',
   TS_TASK_TEMPLATES:   'trustsheild_task_templates',
   TS_PWA_CONTACTS:     'trustsheild_pwa_contacts',
+  // ── TrustSheild OS™ PWA Identity & Pairing Keys (Run 5) ──
+  TS_PWA_IDENTITIES:   'trustsheild_pwa_identities',
+  TS_PAIRING_CODES:    'trustsheild_pairing_codes',
+  TS_CURRENT_PWA_ID:   'trustsheild_current_pwa_identity',
+  TS_PWA_CONFIG:       'trustsheild_pwa_config',
+  TS_PWA_ID_COUNTER:   'trustsheild_pwa_id_counter',
+
 
 
 }
@@ -581,5 +588,159 @@ export const useTaskStore = create((set, get) => ({
       taskActivity: seed.taskActivity,
       pwaContacts:  seed.pwaContacts,
     })
+  },
+}))
+
+// ─── TrustSheild OS™ PWA Identity Store (Run 5) ──────────────
+// Manages all PWA identities, unique IDs, and pairing codes.
+// Key: trustsheild_pwa_identities, trustsheild_current_pwa_identity
+// This is additive — does NOT replace any legacy or prior store.
+// ⚠️  DEMO/LOCAL ONLY — Pairing codes are identifiers for
+//     local simulation only. Secure auth added in later runs.
+
+// ─── ID & Code helpers (pure functions, no side effects) ──────
+function _padId(n) { return String(n).padStart(4, '0') }
+function _randSegment(len) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+export function generatePwaId(counter) {
+  return `TS-PWA-${_padId(counter)}`
+}
+export function generatePairingCode() {
+  return `TS-${_randSegment(4)}-${_randSegment(4)}`
+}
+
+export const useIdentityStore = create((set, get) => ({
+  // ── PWA Identities ────────────────────────────────────────
+  pwaIdentities: persist.get(STORAGE_KEYS.TS_PWA_IDENTITIES, null),
+
+  // ── Pairing code → identity ID map ───────────────────────
+  pairingCodes:  persist.get(STORAGE_KEYS.TS_PAIRING_CODES,  null),
+
+  // ── Currently active PWA identity (for the PWA screen) ───
+  currentPwaId:  persist.get(STORAGE_KEYS.TS_CURRENT_PWA_ID, null),
+
+  // ── Per-PWA config ────────────────────────────────────────
+  pwaConfig:     persist.get(STORAGE_KEYS.TS_PWA_CONFIG,     null),
+
+  // ── ID counter (starts at 6 — 1-5 are seed data) ─────────
+  idCounter:     persist.get(STORAGE_KEYS.TS_PWA_ID_COUNTER, 6),
+
+  // ── Seed demo identities ──────────────────────────────────
+  seedIdentities: (seed) => {
+    const s = get()
+    const next = {}
+    if (!s.pwaIdentities) { next.pwaIdentities = seed.pwaIdentities; persist.set(STORAGE_KEYS.TS_PWA_IDENTITIES, seed.pwaIdentities) }
+    if (!s.pairingCodes)  { next.pairingCodes  = seed.pairingCodes;  persist.set(STORAGE_KEYS.TS_PAIRING_CODES,  seed.pairingCodes)  }
+    if (!s.pwaConfig)     { next.pwaConfig      = seed.pwaConfig;    persist.set(STORAGE_KEYS.TS_PWA_CONFIG,     seed.pwaConfig)     }
+    if (!s.currentPwaId)  { next.currentPwaId   = seed.defaultPwaId; persist.set(STORAGE_KEYS.TS_CURRENT_PWA_ID, seed.defaultPwaId)  }
+    if (Object.keys(next).length) set(next)
+  },
+
+  // ── Create a new PWA identity ─────────────────────────────
+  createIdentity: (fields) => {
+    const counter = get().idCounter
+    const pwaId   = generatePwaId(counter)
+    const code    = generatePairingCode()
+    // Ensure code uniqueness — regen if collision
+    const existingCodes = Object.keys(get().pairingCodes || {})
+    const finalCode = existingCodes.includes(code) ? generatePairingCode() : code
+    const now = new Date().toISOString()
+    const identity = {
+      id: pwaId,
+      pairingCode: finalCode,
+      displayName: fields.displayName || 'Response User',
+      organisationName: fields.organisationName || '',
+      roleType: fields.roleType || 'Client Contact',
+      contactLabel: fields.contactLabel || '',
+      avatar: (fields.displayName || 'RU').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+      linkedCaseIds: fields.linkedCaseIds || [],
+      assignedTaskIds: [],
+      syncStatus: 'Demo Local',
+      backendStatus: 'Not Configured',
+      configurationStatus: 'Demo Configured',
+      permissions: {
+        canSubmitUpdates: true,
+        canAddEvidence: true,
+        canApproveDrafts: fields.roleType === 'Client Contact' || fields.roleType === 'Founder / Business Owner' || fields.roleType === 'Legal Contact',
+        canRequestEscalation: true,
+      },
+      dashboardInstruction: fields.dashboardInstruction || '',
+      status: 'Active',
+      source: 'demo',
+      notes: fields.notes || '',
+      createdAt: now,
+      updatedAt: now,
+      _demo: true,
+    }
+    const pwaIdentities = [...(get().pwaIdentities || []), identity]
+    const pairingCodes  = { ...(get().pairingCodes || {}), [finalCode]: pwaId }
+    const newCounter    = counter + 1
+    persist.set(STORAGE_KEYS.TS_PWA_IDENTITIES, pwaIdentities)
+    persist.set(STORAGE_KEYS.TS_PAIRING_CODES,  pairingCodes)
+    persist.set(STORAGE_KEYS.TS_PWA_ID_COUNTER, newCounter)
+    set({ pwaIdentities, pairingCodes, idCounter: newCounter })
+    return identity
+  },
+
+  // ── Update identity ────────────────────────────────────────
+  updateIdentityRecord: (pwaId, patch) => {
+    const pwaIdentities = (get().pwaIdentities || []).map(i =>
+      i.id === pwaId ? { ...i, ...patch, updatedAt: new Date().toISOString() } : i
+    )
+    persist.set(STORAGE_KEYS.TS_PWA_IDENTITIES, pwaIdentities)
+    set({ pwaIdentities })
+  },
+
+  // ── Deactivate identity ────────────────────────────────────
+  deactivateIdentity: (pwaId) => {
+    const pwaIdentities = (get().pwaIdentities || []).map(i =>
+      i.id === pwaId ? { ...i, status: 'Archived', updatedAt: new Date().toISOString() } : i
+    )
+    persist.set(STORAGE_KEYS.TS_PWA_IDENTITIES, pwaIdentities)
+    set({ pwaIdentities })
+  },
+
+  // ── Set current active PWA identity (for PWA screen) ──────
+  setCurrentPwaId: (pwaId) => {
+    persist.set(STORAGE_KEYS.TS_CURRENT_PWA_ID, pwaId)
+    set({ currentPwaId: pwaId })
+  },
+
+  // ── Pair by code (demo local only) ────────────────────────
+  pairByCode: (code) => {
+    const map = get().pairingCodes || {}
+    const pwaId = map[code.trim().toUpperCase()]
+    if (!pwaId) return { success: false, error: 'Code not found in demo identities.' }
+    const identity = (get().pwaIdentities || []).find(i => i.id === pwaId)
+    if (!identity) return { success: false, error: 'Identity not found for this code.' }
+    if (identity.status === 'Archived') return { success: false, error: 'This PWA identity is archived.' }
+    persist.set(STORAGE_KEYS.TS_CURRENT_PWA_ID, pwaId)
+    set({ currentPwaId: pwaId })
+    return { success: true, identity }
+  },
+
+  // ── Get current identity object ───────────────────────────
+  getCurrentIdentity: () => {
+    const id = get().currentPwaId
+    return (get().pwaIdentities || []).find(i => i.id === id) || null
+  },
+
+  // ── Save per-PWA config ────────────────────────────────────
+  savePwaConfig: (pwaId, config) => {
+    const pwaConfig = { ...(get().pwaConfig || {}), [pwaId]: config }
+    persist.set(STORAGE_KEYS.TS_PWA_CONFIG, pwaConfig)
+    set({ pwaConfig })
+  },
+
+  // ── Hard reset ────────────────────────────────────────────
+  resetIdentities: (seed) => {
+    persist.set(STORAGE_KEYS.TS_PWA_IDENTITIES, seed.pwaIdentities)
+    persist.set(STORAGE_KEYS.TS_PAIRING_CODES,  seed.pairingCodes)
+    persist.set(STORAGE_KEYS.TS_PWA_CONFIG,     seed.pwaConfig)
+    persist.set(STORAGE_KEYS.TS_CURRENT_PWA_ID, seed.defaultPwaId)
+    persist.set(STORAGE_KEYS.TS_PWA_ID_COUNTER, 6)
+    set({ pwaIdentities: seed.pwaIdentities, pairingCodes: seed.pairingCodes, pwaConfig: seed.pwaConfig, currentPwaId: seed.defaultPwaId, idCounter: 6 })
   },
 }))
