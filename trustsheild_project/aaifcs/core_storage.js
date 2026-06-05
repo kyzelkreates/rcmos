@@ -70,6 +70,16 @@ export const STORAGE_KEYS = {
   TS_UPDATES:         'trustsheild_demo_updates',
   TS_FEED:            'trustsheild:dashboard:feed',
   TS_MODE:            'trustsheild:app:mode',   // 'demo' | 'live'
+  // ── TrustSheild OS™ PWA Keys (Run 3) ─────────────────────
+  TS_PWA_PROFILE:    'trustsheild_pwa_demo_profile',
+  TS_PWA_CASE:       'trustsheild_pwa_demo_case',
+  TS_PWA_TASKS:      'trustsheild_pwa_demo_tasks',
+  TS_PWA_UPDATES:    'trustsheild_pwa_demo_updates',
+  TS_PWA_NOTES:      'trustsheild_pwa_demo_notes',
+  TS_PWA_ESCALATIONS:'trustsheild_pwa_demo_escalations',
+  TS_PWA_DRAFTS:     'trustsheild_pwa_demo_draft_reviews',
+  TS_PWA_TAB:        'trustsheild:pwa:activeTab',
+
 }
 
 // ─── Persist Helpers ──────────────────────────────────────────
@@ -346,6 +356,101 @@ export const useTrustStore = create((set, get) => ({
       drafts:    demoData.drafts,
       updates:   demoData.updates,
       feedItems: demoData.feedItems,
+    })
+  },
+}))
+
+// ─── TrustSheild OS™ PWA Store (Run 3) ───────────────────────
+// All Response PWA state lives here.
+// Namespace: trustsheild_pwa_demo_* / trustsheild:pwa:*
+// This is additive — does NOT alter any legacy or dashboard store.
+export const usePwaStore = create((set, get) => ({
+  // ── PWA Tab ───────────────────────────────────────────────
+  activeTab: persist.get(STORAGE_KEYS.TS_PWA_TAB, 'home'),
+
+  // ── Demo Profile ──────────────────────────────────────────
+  profile: persist.get(STORAGE_KEYS.TS_PWA_PROFILE, null),
+
+  // ── Core PWA Collections (null = use demo seed) ───────────
+  pwaCase:      persist.get(STORAGE_KEYS.TS_PWA_CASE,       null),
+  pwaTasks:     persist.get(STORAGE_KEYS.TS_PWA_TASKS,      null),
+  pwaUpdates:   persist.get(STORAGE_KEYS.TS_PWA_UPDATES,    null),
+  pwaNotes:     persist.get(STORAGE_KEYS.TS_PWA_NOTES,      null),
+  pwaEscalations: persist.get(STORAGE_KEYS.TS_PWA_ESCALATIONS, null),
+  pwaDraftReviews: persist.get(STORAGE_KEYS.TS_PWA_DRAFTS,  null),
+
+  // ── Actions ───────────────────────────────────────────────
+  setActiveTab: (tab) => {
+    persist.set(STORAGE_KEYS.TS_PWA_TAB, tab)
+    set({ activeTab: tab })
+  },
+
+  // Seed with demo data if not already set
+  seedPwaDemo: (demoData) => {
+    const s = get()
+    const next = {}
+    if (!s.profile)         { next.profile          = demoData.profile;       persist.set(STORAGE_KEYS.TS_PWA_PROFILE,    demoData.profile) }
+    if (!s.pwaCase)         { next.pwaCase           = demoData.pwaCase;       persist.set(STORAGE_KEYS.TS_PWA_CASE,       demoData.pwaCase) }
+    if (!s.pwaTasks)        { next.pwaTasks          = demoData.pwaTasks;      persist.set(STORAGE_KEYS.TS_PWA_TASKS,      demoData.pwaTasks) }
+    if (!s.pwaUpdates)      { next.pwaUpdates        = demoData.pwaUpdates;    persist.set(STORAGE_KEYS.TS_PWA_UPDATES,    demoData.pwaUpdates) }
+    if (!s.pwaNotes)        { next.pwaNotes          = demoData.pwaNotes;      persist.set(STORAGE_KEYS.TS_PWA_NOTES,      demoData.pwaNotes) }
+    if (!s.pwaEscalations)  { next.pwaEscalations    = demoData.pwaEscalations; persist.set(STORAGE_KEYS.TS_PWA_ESCALATIONS, demoData.pwaEscalations) }
+    if (!s.pwaDraftReviews) { next.pwaDraftReviews   = demoData.pwaDraftReviews; persist.set(STORAGE_KEYS.TS_PWA_DRAFTS,   demoData.pwaDraftReviews) }
+    if (Object.keys(next).length) set(next)
+  },
+
+  // Task actions
+  updatePwaTask: (id, patch) => {
+    const pwaTasks = get().pwaTasks?.map(t => t.id === id ? { ...t, ...patch, updatedAt: new Date().toISOString() } : t) || []
+    persist.set(STORAGE_KEYS.TS_PWA_TASKS, pwaTasks)
+    set({ pwaTasks })
+  },
+
+  // Add a note
+  addNote: (note) => {
+    const pwaNotes = [{ id: `note-${Date.now()}`, ts: new Date().toISOString(), ...note }, ...(get().pwaNotes || [])]
+    persist.set(STORAGE_KEYS.TS_PWA_NOTES, pwaNotes)
+    set({ pwaNotes })
+  },
+
+  // Add a situation update
+  addPwaUpdate: (upd) => {
+    const pwaUpdates = [{ id: `upd-${Date.now()}`, ts: new Date().toISOString(), status: 'Submitted (Demo)', ...upd }, ...(get().pwaUpdates || [])]
+    persist.set(STORAGE_KEYS.TS_PWA_UPDATES, pwaUpdates)
+    set({ pwaUpdates })
+  },
+
+  // Add an escalation request
+  addEscalation: (esc) => {
+    const pwaEscalations = [{ id: `esc-${Date.now()}`, ts: new Date().toISOString(), status: 'Submitted (Demo)', ...esc }, ...(get().pwaEscalations || [])]
+    persist.set(STORAGE_KEYS.TS_PWA_ESCALATIONS, pwaEscalations)
+    set({ pwaEscalations })
+  },
+
+  // Update draft review
+  updateDraftReview: (id, patch) => {
+    const pwaDraftReviews = get().pwaDraftReviews?.map(d => d.id === id ? { ...d, ...patch, reviewedAt: new Date().toISOString() } : d) || []
+    persist.set(STORAGE_KEYS.TS_PWA_DRAFTS, pwaDraftReviews)
+    set({ pwaDraftReviews })
+  },
+
+  // Hard reset to demo
+  resetPwaToDemo: (demoData) => {
+    persist.set(STORAGE_KEYS.TS_PWA_PROFILE,    demoData.profile)
+    persist.set(STORAGE_KEYS.TS_PWA_CASE,       demoData.pwaCase)
+    persist.set(STORAGE_KEYS.TS_PWA_TASKS,      demoData.pwaTasks)
+    persist.set(STORAGE_KEYS.TS_PWA_UPDATES,    demoData.pwaUpdates)
+    persist.set(STORAGE_KEYS.TS_PWA_NOTES,      demoData.pwaNotes)
+    persist.set(STORAGE_KEYS.TS_PWA_ESCALATIONS, demoData.pwaEscalations)
+    persist.set(STORAGE_KEYS.TS_PWA_DRAFTS,     demoData.pwaDraftReviews)
+    set({
+      profile:          demoData.profile,
+      pwaCase:          demoData.pwaCase,
+      pwaTasks:         demoData.pwaTasks,
+      pwaUpdates:       demoData.pwaUpdates,
+      pwaNotes:         demoData.pwaNotes,
+      pwaEscalations:   demoData.pwaEscalations,
+      pwaDraftReviews:  demoData.pwaDraftReviews,
     })
   },
 }))

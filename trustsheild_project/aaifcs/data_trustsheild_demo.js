@@ -663,3 +663,187 @@ export const DEMO_DATA = {
 }
 
 export default DEMO_DATA
+
+// ============================================================
+// TrustSheild Response PWA — Demo Data (Run 3)
+// ============================================================
+// ⚠️  DEMO DATA ONLY — All records are fictional.
+//     Clearly marked as demo/simulation throughout the UI.
+// ============================================================
+
+// ─── PWA Demo Profile ─────────────────────────────────────────
+export const PWA_DEMO_PROFILE = {
+  id:           'pwa-001-demo',
+  displayName:  'Sarah K.',
+  role:         'PR Lead',
+  organisation: 'Meridian Cafe Group / Oakhaven Hotels',
+  pwaIdLabel:   'Unique ID — Run 5',
+  mode:         'Demo',
+  _demo: true,
+}
+
+// ─── PWA Active Case Brief ────────────────────────────────────
+export const PWA_DEMO_CASE = {
+  id:           'case-001',
+  title:        'Negative Review Spike — Meridian Cafe',
+  client:       'Meridian Cafe Group',
+  riskLevel:    'High',
+  source:       'Review Platform',
+  channel:      'Google Reviews / Yelp',
+  status:       'Action Needed',
+  priority:     'High',
+  latestInstruction: 'Submit current situation update. Upload screenshots of new reviews. Confirm you have received the holding brief.',
+  dashboardOwner:    'Dashboard Admin',
+  updatedAt:    ago(45),
+  _demo: true,
+}
+
+// ─── PWA Tasks ───────────────────────────────────────────────
+export const PWA_DEMO_TASKS = [
+  {
+    id: 'ptask-001',
+    title: 'Confirm: Holding Brief Received',
+    type: 'Confirm Update Received',
+    priority: 'High',
+    status: 'New',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    dueLabel: 'ASAP',
+    description: 'Confirm you have received and read the holding brief sent by the dashboard team.',
+    _demo: true,
+  },
+  {
+    id: 'ptask-002',
+    title: 'Submit Situation Update',
+    type: 'Submit Situation Update',
+    priority: 'High',
+    status: 'In Progress',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    dueLabel: 'Today',
+    description: 'Provide an update on the current on-site situation. Include any new developments observed.',
+    _demo: true,
+  },
+  {
+    id: 'ptask-003',
+    title: 'Upload Evidence — Screenshots of New Reviews',
+    type: 'Upload Evidence / Notes',
+    priority: 'Medium',
+    status: 'New',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    dueLabel: 'Today',
+    description: 'Take screenshots of all new 1-star reviews and add as evidence notes below.',
+    _demo: true,
+  },
+  {
+    id: 'ptask-004',
+    title: 'Review Draft Response — Customer Apology',
+    type: 'Review Draft Response',
+    priority: 'High',
+    status: 'Needs Review',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    dueLabel: 'Before 5pm',
+    description: 'Review the draft public response prepared by the dashboard team. Approve, request changes, or escalate for legal review.',
+    _demo: true,
+  },
+  {
+    id: 'ptask-005',
+    title: 'Log Customer Complaint — Table 7 Incident',
+    type: 'Log Customer / Social Issue',
+    priority: 'Medium',
+    status: 'Complete',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    dueLabel: 'Done',
+    description: 'Log the customer complaint received verbally about table 7 service failure.',
+    _demo: true,
+  },
+]
+
+// ─── PWA Situation Updates (submitted history) ────────────────
+export const PWA_DEMO_UPDATES = [
+  {
+    id: 'pupd-001',
+    type: 'Situation Update',
+    message: 'Spoke with manager on site. Three staff members confirm the review cluster started after a staff dispute was discussed on a private Facebook group. Monitoring.',
+    urgency: 'Medium',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    submittedBy: 'Sarah K.',
+    ts: ago(200),
+    status: 'Submitted (Demo)',
+    _demo: true,
+  },
+  {
+    id: 'pupd-002',
+    type: 'Check-in',
+    message: 'Available and monitoring situation. No new public posts in last 2 hours.',
+    urgency: 'Low',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    submittedBy: 'Sarah K.',
+    ts: ago(90),
+    status: 'Submitted (Demo)',
+    _demo: true,
+  },
+]
+
+// ─── PWA Evidence Notes ───────────────────────────────────────
+export const PWA_DEMO_NOTES = [
+  {
+    id: 'pnote-001',
+    evidenceType: 'Internal Note',
+    description: 'Confirmed with manager: 14 new reviews since Monday. All accounts appear newly created with no prior activity.',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    submittedBy: 'Sarah K.',
+    ts: ago(250),
+    _demo: true,
+  },
+  {
+    id: 'pnote-002',
+    evidenceType: 'Customer Message',
+    description: 'Customer contacted directly via email — willing to update review once issue is resolved. Flagged for follow-up.',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    submittedBy: 'Sarah K.',
+    ts: ago(130),
+    _demo: true,
+  },
+]
+
+// ─── PWA Draft Reviews ────────────────────────────────────────
+export const PWA_DEMO_DRAFT_REVIEWS = [
+  {
+    id: 'pdraft-001',
+    title: 'Public Response — Negative Review Spike',
+    intendedChannel: 'Google Reviews — Owner Response',
+    tone: 'Apologetic',
+    status: 'Awaiting Your Review',
+    linkedCase: 'Negative Review Spike — Meridian Cafe',
+    content: 'We sincerely apologise for any experience that has fallen short of our standards at Meridian Cafe. We take all feedback very seriously and our team is actively investigating. We are committed to improving and would welcome the opportunity to resolve this directly. Please contact us at [contact]. [DRAFT — HUMAN REVIEW REQUIRED BEFORE POSTING]',
+    reviewStatus: null, // null | 'approved' | 'needs_changes' | 'escalated'
+    dashboardNote: 'Please review and approve this draft before it is posted publicly. If legal review is needed, please escalate.',
+    _demo: true,
+  },
+]
+
+// ─── PWA Escalations (history) ────────────────────────────────
+export const PWA_DEMO_ESCALATIONS = [
+  {
+    id: 'pesc-001',
+    reason: 'PR review needed',
+    urgency: 'High',
+    message: 'Review cluster appears coordinated. Recommend PR team review before any public response is posted.',
+    submittedBy: 'Sarah K.',
+    ts: ago(300),
+    status: 'Submitted (Demo)',
+    _demo: true,
+  },
+]
+
+// ─── PWA Demo Composed export ─────────────────────────────────
+export const PWA_DEMO_DATA = {
+  profile:          PWA_DEMO_PROFILE,
+  pwaCase:          PWA_DEMO_CASE,
+  pwaTasks:         PWA_DEMO_TASKS,
+  pwaUpdates:       PWA_DEMO_UPDATES,
+  pwaNotes:         PWA_DEMO_NOTES,
+  pwaDraftReviews:  PWA_DEMO_DRAFT_REVIEWS,
+  pwaEscalations:   PWA_DEMO_ESCALATIONS,
+}
+
+export default DEMO_DATA
