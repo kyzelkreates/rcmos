@@ -79,6 +79,15 @@ export const STORAGE_KEYS = {
   TS_PWA_ESCALATIONS:'trustsheild_pwa_demo_escalations',
   TS_PWA_DRAFTS:     'trustsheild_pwa_demo_draft_reviews',
   TS_PWA_TAB:        'trustsheild:pwa:activeTab',
+  // ── TrustSheild OS™ Configurable Task Keys (Run 4) ────────
+  // Shared task store — dashboard creates, PWA reads/acts.
+  // DISTINCT from trustsheild_demo_tasks (dashboard legacy seed)
+  // and trustsheild_pwa_demo_tasks (PWA legacy seed).
+  TS_CONFIG_TASKS:     'trustsheild_tasks',
+  TS_TASK_ACTIVITY:    'trustsheild_task_activity',
+  TS_TASK_TEMPLATES:   'trustsheild_task_templates',
+  TS_PWA_CONTACTS:     'trustsheild_pwa_contacts',
+
 
 }
 
@@ -451,6 +460,126 @@ export const usePwaStore = create((set, get) => ({
       pwaNotes:         demoData.pwaNotes,
       pwaEscalations:   demoData.pwaEscalations,
       pwaDraftReviews:  demoData.pwaDraftReviews,
+    })
+  },
+}))
+
+// ─── TrustSheild OS™ Configurable Task Store (Run 4) ─────────
+// The SHARED task store — dashboard creates/edits tasks here,
+// PWA reads and updates status here.
+// Key: trustsheild_tasks (distinct from trustsheild_demo_tasks)
+// This is additive — does NOT replace any legacy or demo store.
+export const useTaskStore = create((set, get) => ({
+  // ── Configurable tasks ────────────────────────────────────
+  configTasks:   persist.get(STORAGE_KEYS.TS_CONFIG_TASKS,   null),
+
+  // ── Task activity feed ────────────────────────────────────
+  taskActivity:  persist.get(STORAGE_KEYS.TS_TASK_ACTIVITY,  null),
+
+  // ── PWA contacts (demo list, Run 5 will replace with real IDs) ─
+  pwaContacts:   persist.get(STORAGE_KEYS.TS_PWA_CONTACTS,   null),
+
+  // ── Seed ──────────────────────────────────────────────────
+  seedTaskData: (seed) => {
+    const s = get()
+    const next = {}
+    if (!s.configTasks)  { next.configTasks  = seed.configTasks;  persist.set(STORAGE_KEYS.TS_CONFIG_TASKS,  seed.configTasks)  }
+    if (!s.taskActivity) { next.taskActivity  = seed.taskActivity; persist.set(STORAGE_KEYS.TS_TASK_ACTIVITY, seed.taskActivity) }
+    if (!s.pwaContacts)  { next.pwaContacts   = seed.pwaContacts;  persist.set(STORAGE_KEYS.TS_PWA_CONTACTS,  seed.pwaContacts)  }
+    if (Object.keys(next).length) set(next)
+  },
+
+  // ── Create a new configurable task ────────────────────────
+  createTask: (task) => {
+    const id = `tsk-${Date.now()}`
+    const now = new Date().toISOString()
+    const newTask = {
+      id,
+      createdAt: now,
+      updatedAt: now,
+      status: 'Sent to PWA',
+      source: 'demo',
+      createdBy: 'TrustSheild Command Dashboard',
+      ...task,
+    }
+    const configTasks = [newTask, ...(get().configTasks || [])]
+    persist.set(STORAGE_KEYS.TS_CONFIG_TASKS, configTasks)
+    set({ configTasks })
+    // Log activity
+    get().addActivity({
+      type: 'task_created',
+      icon: 'Plus',
+      color: 'gold',
+      text: `Task created: "${newTask.title.slice(0, 40)}"`,
+      sub:  `Assigned to ${newTask.assignedName || 'PWA'} · ${newTask.type}`,
+      taskId: id,
+    })
+    return newTask
+  },
+
+  // ── Update a task (dashboard or PWA) ──────────────────────
+  updateTask: (id, patch) => {
+    const configTasks = get().configTasks?.map(t =>
+      t.id === id ? { ...t, ...patch, updatedAt: new Date().toISOString() } : t
+    ) || []
+    persist.set(STORAGE_KEYS.TS_CONFIG_TASKS, configTasks)
+    set({ configTasks })
+  },
+
+  // ── PWA status update (logs activity too) ─────────────────
+  pwaUpdateStatus: (id, newStatus, actorName) => {
+    const configTasks = get().configTasks?.map(t =>
+      t.id === id ? { ...t, status: newStatus, updatedAt: new Date().toISOString(), lastPwaAction: newStatus } : t
+    ) || []
+    persist.set(STORAGE_KEYS.TS_CONFIG_TASKS, configTasks)
+    set({ configTasks })
+    const task = configTasks.find(t => t.id === id)
+    const activityMap = {
+      'Received':        { icon: 'CheckCircle',  color: 'green',  text: `PWA confirmed task received` },
+      'In Progress':     { icon: 'Play',         color: 'gold',   text: `PWA started task` },
+      'Submitted':       { icon: 'Send',         color: 'green',  text: `PWA submitted task update` },
+      'Complete':        { icon: 'CheckSquare',  color: 'green',  text: `Task marked complete by PWA` },
+      'Escalated':       { icon: 'AlertTriangle',color: 'red',    text: `PWA requested escalation` },
+      'Approved':        { icon: 'CheckCircle',  color: 'green',  text: `Draft approved by PWA` },
+      'Needs Changes':   { icon: 'Edit3',        color: 'amber',  text: `Changes requested by PWA` },
+    }
+    const ev = activityMap[newStatus] || { icon: 'RefreshCw', color: 'silver', text: `Task status → ${newStatus}` }
+    get().addActivity({
+      type:   'pwa_action',
+      icon:   ev.icon,
+      color:  ev.color,
+      text:   ev.text,
+      sub:    `"${task?.title?.slice(0,35) || id}" · ${actorName || 'PWA User'}`,
+      taskId: id,
+    })
+  },
+
+  // ── Activity feed ─────────────────────────────────────────
+  addActivity: (item) => {
+    const taskActivity = [
+      { id: Date.now(), ts: new Date().toISOString(), ...item },
+      ...(get().taskActivity || []),
+    ].slice(0, 60)
+    persist.set(STORAGE_KEYS.TS_TASK_ACTIVITY, taskActivity)
+    set({ taskActivity })
+  },
+
+  // ── Delete a task ─────────────────────────────────────────
+  deleteTask: (id) => {
+    const configTasks = (get().configTasks || []).filter(t => t.id !== id)
+    persist.set(STORAGE_KEYS.TS_CONFIG_TASKS, configTasks)
+    set({ configTasks })
+  },
+
+  // ── Hard reset ────────────────────────────────────────────
+  resetTaskData: (seed) => {
+    persist.set(STORAGE_KEYS.TS_CONFIG_TASKS,  seed.configTasks)
+    persist.set(STORAGE_KEYS.TS_TASK_ACTIVITY, seed.taskActivity)
+    persist.set(STORAGE_KEYS.TS_PWA_CONTACTS,  seed.pwaContacts)
+    set({
+      configTasks:  seed.configTasks,
+      taskActivity: seed.taskActivity,
+      pwaContacts:  seed.pwaContacts,
     })
   },
 }))

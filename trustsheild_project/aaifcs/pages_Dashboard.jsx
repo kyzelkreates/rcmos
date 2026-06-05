@@ -32,6 +32,9 @@ import DEMO_DATA from './data_trustsheild_demo'
 import { formatDateTime, formatDate } from './utils_format'
 import APP_CONFIG from './config_app'
 import { ROUTES } from './config_routes'
+import TaskConfigPanel from './modules_tasks_TaskConfigPanel'
+import { useTaskStore } from './core_storage'
+import { TASK_SEED_DATA } from './data_trustsheild_demo'
 
 // ─── Colour helpers ───────────────────────────────────────────
 const RISK_STYLES = {
@@ -200,7 +203,8 @@ const TABS = [
   { key: 'command',     label: 'Crisis Command',     icon: 'Zap' },
   { key: 'feed',        label: 'Live Feed',          icon: 'Radio' },
   { key: 'responders',  label: 'Responders',         icon: 'Users' },
-  { key: 'tasks',       label: 'Tasks',              icon: 'CheckSquare' },
+  { key: 'tasks',       label: 'Tasks (Legacy)',      icon: 'CheckSquare' },
+  { key: 'taskconfig', label: 'PWA Task Config',    icon: 'Settings'    },
   { key: 'evidence',    label: 'Evidence',           icon: 'FolderOpen' },
   { key: 'drafts',      label: 'Drafts',             icon: 'FileEdit' },
   { key: 'updates',     label: 'Updates',            icon: 'Send' },
@@ -1102,10 +1106,12 @@ function AIAgentSection() {
 export default function Dashboard() {
   const navigate   = useNavigate()
   const { activeTab, setActiveTab, cases, tasks, pwas, timeline, drafts, updates, feedItems, seedDemoData, resetToDemo } = useTrustStore()
+  const { seedTaskData, resetTaskData } = useTaskStore()
 
   // Seed demo data on first load
   useEffect(() => {
     seedDemoData(DEMO_DATA)
+    seedTaskData(TASK_SEED_DATA)
   }, [])
 
   const data = { cases, tasks, pwas, timeline, drafts, updates, feedItems }
@@ -1196,6 +1202,13 @@ export default function Dashboard() {
       {activeTab === 'tasks' && (
         <SectionCard title="Tasks Sent to PWAs" icon="CheckSquare" iconColor="#8f5cff" subtitle="Response tasks sent and tracked from the dashboard">
           <TasksSection tasks={tasks} cases={cases} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'taskconfig' && (
+        <SectionCard title="PWA Task Configuration" icon="Settings" iconColor="#d6a84f"
+          subtitle="Create, assign, and track response tasks for PWA users — demo/local mode">
+          <TaskConfigPanel cases={cases} />
         </SectionCard>
       )}
 

@@ -37,8 +37,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Icon from './components_ui_Icon'
-import { usePwaStore } from './core_storage'
-import { PWA_DEMO_DATA } from './data_trustsheild_demo'
+import { usePwaStore, useTaskStore } from './core_storage'
+import { PWA_DEMO_DATA, TASK_SEED_DATA } from './data_trustsheild_demo'
 import APP_CONFIG from './config_app'
 
 // ─── Colour maps ──────────────────────────────────────────────
@@ -585,16 +585,33 @@ const TASK_BTN_LABEL = {
 function TasksScreen({ pwaTasks, updateTask, onTab }) {
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState('all')
+  const { configTasks, pwaUpdateStatus, seedTaskData } = useTaskStore()
 
-  const filtered = filter === 'all' ? pwaTasks : pwaTasks?.filter(t => t.status === filter)
-  const pending  = pwaTasks?.filter(t => ['New','In Progress','Needs Review'].includes(t.status)).length ?? 0
+  // Seed configurable tasks on mount if not already set
+  useEffect(() => { seedTaskData(TASK_SEED_DATA) }, [])
 
-  const handleAction = useCallback((task) => {
-    const nextStatus = TASK_STATUS_NEXT[task.status]
+  // Merge configTasks (dashboard-created) with legacy pwaTasks.
+  // configTasks take priority — shown first, identified by source:'demo'.
+  const CURRENT_PWA_ID = 'pwa-001' // demo — Run 5 will replace with real PWA ID
+  const dashboardTasks = (configTasks || []).filter(t => t.assignedPwaId === CURRENT_PWA_ID)
+  const allTasks = [
+    ...dashboardTasks,
+    ...(pwaTasks || []).filter(pt => !dashboardTasks.some(dt => dt.id === pt.id)),
+  ]
+  const filtered = filter === 'all' ? allTasks : allTasks.filter(t => t.status === filter)
+  const pending  = allTasks.filter(t => ['New','Sent to PWA','In Progress','Needs Review'].includes(t.status)).length
+
+  const handleAction = useCallback((task, forceStatus) => {
+    const nextStatus = forceStatus || TASK_STATUS_NEXT[task.status]
     if (!nextStatus) return
-    updateTask(task.id, { status: nextStatus })
-    setToast(`"${task.title.slice(0,30)}…" updated to ${nextStatus}`)
-  }, [updateTask])
+    const isDashboardTask = task.source === 'demo' && !!task.createdBy
+    if (isDashboardTask) {
+      pwaUpdateStatus(task.id, nextStatus, 'Response PWA User')
+    } else {
+      updateTask(task.id, { status: nextStatus })
+    }
+    setToast(`"${task.title.slice(0,28)}…" → ${nextStatus} (demo/local)`)
+  }, [updateTask, pwaUpdateStatus])
 
   return (
     <div className="space-y-4">
@@ -627,48 +644,122 @@ function TasksScreen({ pwaTasks, updateTask, onTab }) {
       {/* Task cards */}
       <div className="space-y-3">
         {filtered?.length > 0 ? filtered.map(task => {
+          const isDashTask = task.source === 'demo' && !!task.createdBy
           const btn = TASK_BTN_LABEL[task.status] || TASK_BTN_LABEL.New
-          const isDone = task.status === 'Complete' || task.status === 'Submitted (Demo)'
+          const isDone = ['Complete','Submitted (Demo)','Approved'].includes(task.status)
           const pc = PRIORITY_COLOR[task.priority] || '#d6a84f'
+          const isApprovalTask = ['Approve Draft Response','Review Draft Response'].includes(task.type)
+          const dueText = task.dueLabel || task.dueStatus || '—'
+
           return (
-            <Card key={task.id} style={{ opacity: isDone ? 0.7 : 1 }}>
+            <Card key={task.id} style={{ opacity: isDone ? 0.75 : 1, border: isDashTask ? '1px solid rgba(214,168,79,0.2)' : undefined }}>
               <div className="p-4 space-y-3">
+                {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                      {isDashTask && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
+                          style={{ background: 'rgba(214,168,79,0.1)', color: '#d6a84f', border: '1px solid rgba(214,168,79,0.2)' }}>
+                          From Dashboard
+                        </span>
+                      )}
+                      {task.humanReviewRequired && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
+                          style={{ background: 'rgba(248,113,113,0.08)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }}>
+                          Human Review Required
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm font-semibold leading-snug" style={{ color: '#f5f5f2' }}>{task.title}</div>
                     <div className="text-xs mt-0.5" style={{ color: '#5a5f6b' }}>{task.type}</div>
                   </div>
                   <StatusPill status={task.status} />
                 </div>
 
-                {task.description && (
-                  <p className="text-xs leading-relaxed" style={{ color: '#a8adb7' }}>{task.description}</p>
+                {/* Instructions (dashboard tasks) or description (PWA seed tasks) */}
+                {(task.instructions || task.description) && (
+                  <div className="p-2.5 rounded-xl"
+                    style={{ background: 'rgba(214,168,79,0.04)', border: '1px solid rgba(214,168,79,0.1)' }}>
+                    <div className="text-[10px] font-semibold mb-1 uppercase tracking-wider" style={{ color: '#5a5f6b' }}>
+                      {task.instructions ? 'Instructions' : 'Description'}
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: '#a8adb7' }}>{task.instructions || task.description}</p>
+                  </div>
                 )}
 
+                {/* Required action */}
+                {task.requiredAction && (
+                  <div className="text-xs" style={{ color: '#c8ccd2' }}>
+                    <span style={{ color: '#5a5f6b' }}>Action: </span>{task.requiredAction}
+                  </div>
+                )}
+
+                {/* Meta */}
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
                     style={{ background: `${pc}12`, color: pc, border: `1px solid ${pc}25` }}>
                     {task.priority} Priority
                   </span>
-                  <span className="text-[10px]" style={{ color: '#5a5f6b' }}>Due: {task.dueLabel}</span>
-                  {task.linkedCase && (
-                    <span className="text-[10px] truncate" style={{ color: '#d6a84f' }}>↗ {task.linkedCase.slice(0, 30)}</span>
+                  <span className="text-[10px]" style={{ color: '#5a5f6b' }}>Due: {dueText}</span>
+                  {(task.linkedCase || task.linkedCaseTitle) && (
+                    <span className="text-[10px] truncate max-w-[160px]" style={{ color: '#d6a84f' }}>
+                      ↗ {(task.linkedCase || task.linkedCaseTitle).slice(0, 32)}
+                    </span>
                   )}
                 </div>
 
-                <TapButton
-                  fullWidth
-                  onClick={() => handleAction(task)}
-                  variant={btn.variant}
-                  disabled={isDone}
-                >
-                  <Icon name={btn.icon} size={15} />
-                  {btn.label}
-                </TapButton>
+                {/* Action buttons */}
+                {!isDone && (
+                  <div className="space-y-2">
+                    {/* Primary action */}
+                    <TapButton fullWidth onClick={() => handleAction(task)} variant={btn.variant}>
+                      <Icon name={btn.icon} size={15} />
+                      {btn.label}
+                    </TapButton>
+
+                    {/* Approval task — show Approve / Needs Changes */}
+                    {isApprovalTask && task.status !== 'New' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <TapButton fullWidth onClick={() => handleAction(task, 'Approved')} variant="green">
+                          <Icon name="CheckCircle" size={14} />Approve
+                        </TapButton>
+                        <TapButton fullWidth onClick={() => handleAction(task, 'Needs Changes')} variant="amber">
+                          <Icon name="Edit3" size={14} />Changes
+                        </TapButton>
+                      </div>
+                    )}
+
+                    {/* Escalate shortcut */}
+                    {task.status === 'In Progress' && (
+                      <TapButton fullWidth onClick={() => handleAction(task, 'Escalated')} variant="red">
+                        <Icon name="AlertTriangle" size={14} />Request Escalation
+                      </TapButton>
+                    )}
+                  </div>
+                )}
+
+                {/* Done state */}
+                {isDone && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg"
+                    style={{ background: 'rgba(55,255,139,0.05)', border: '1px solid rgba(55,255,139,0.15)' }}>
+                    <Icon name="CheckCircle" size={13} style={{ color: '#37ff8b' }} />
+                    <span className="text-xs" style={{ color: '#37ff8b' }}>{task.status} (demo/local)</span>
+                  </div>
+                )}
+
+                {/* Human review advisory */}
+                {task.humanReviewRequired && !isDone && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg"
+                    style={{ background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)' }}>
+                    <Icon name="ShieldAlert" size={11} style={{ color: '#f87171', flexShrink: 0 }} />
+                    <span className="text-[10px]" style={{ color: '#fca5a5' }}>Human review required before public action.</span>
+                  </div>
+                )}
               </div>
             </Card>
           )
-        }) : <EmptySlate icon="CheckSquare" message="No tasks in this filter." />}
+        }) : <EmptySlate icon="CheckSquare" message="No assigned tasks yet." sub="New response tasks from the TrustSheild Command Dashboard will appear here." />}
       </div>
 
       {/* Shortcut to submit update */}
@@ -1189,13 +1280,20 @@ export default function DriverApp() {
     seedPwaDemo, updatePwaTask, addNote, addPwaUpdate, addEscalation, updateDraftReview, resetPwaToDemo,
   } = usePwaStore()
 
+  const { seedTaskData } = useTaskStore()
+
   // Seed demo data on first load
   useEffect(() => {
     seedPwaDemo(PWA_DEMO_DATA)
+    seedTaskData(TASK_SEED_DATA)
   }, [])
 
   // Badge count for bottom nav
-  const pendingTasks = pwaTasks?.filter(t => ['New','In Progress','Needs Review'].includes(t.status)).length ?? 0
+  // Badge count from both stores — configTasks are dashboard-assigned tasks for pwa-001 (demo)
+  const { configTasks: _cfgT } = useTaskStore()
+  const dashTasksPending = (_cfgT || []).filter(t => t.assignedPwaId === 'pwa-001' && ['New','Sent to PWA','In Progress','Needs Review'].includes(t.status)).length
+  const legacyPending    = pwaTasks?.filter(t => ['New','In Progress','Needs Review'].includes(t.status)).length ?? 0
+  const pendingTasks     = dashTasksPending + legacyPending
 
   // Screen renderer
   const renderScreen = () => {
