@@ -37,7 +37,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Icon from './components_ui_Icon'
-import { usePwaStore, useTaskStore, useIdentityStore } from './core_storage'
+import { usePwaStore, useTaskStore, useIdentityStore, useTrustStore } from './core_storage'
 import { PWA_DEMO_DATA, TASK_SEED_DATA, IDENTITY_SEED_DATA } from './data_trustsheild_demo'
 import APP_CONFIG from './config_app'
 
@@ -327,7 +327,53 @@ function BottomNav({ active, onTab, taskBadge }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN 1 — Home / Command Brief
 // ═══════════════════════════════════════════════════════════════
-function HomeScreen({ profile, pwaCase, pwaTasks, onTab }) {
+
+// ─── PWA Live-Ready Empty State ───────────────────────────────
+// Shown in any PWA screen when live mode is active and no
+// backend-connected data exists yet.
+function PwaLiveReady({ message }) {
+  return (
+    <Card>
+      <div className="flex flex-col items-center py-10 gap-4">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full"
+          style={{ background: 'rgba(55,255,139,0.07)', border: '1px solid rgba(55,255,139,0.2)' }}>
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#37ff8b', boxShadow: '0 0 6px rgba(55,255,139,0.8)' }} />
+          <span className="text-xs font-semibold" style={{ color: '#37ff8b' }}>Live Mode Active</span>
+        </div>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+          style={{ background: 'rgba(55,255,139,0.05)', border: '1px solid rgba(55,255,139,0.1)' }}>
+          <Icon name="Radio" size={22} style={{ color: 'rgba(55,255,139,0.18)' }} />
+        </div>
+        <div className="text-center space-y-2 max-w-xs px-2">
+          <div className="text-sm font-semibold" style={{ color: '#5a5f6b' }}>Live Mode is active.</div>
+          <p className="text-xs leading-relaxed" style={{ color: '#3a3f4b' }}>
+            {message || 'This PWA is ready for backend-connected assignments, but no live backend is configured yet. Demo data is hidden.'}
+          </p>
+        </div>
+        <div className="w-full space-y-1.5 text-xs">
+          {[
+            { label: 'PWA Mode',  value: 'Live Ready' },
+            { label: 'Backend',   value: 'Not Configured' },
+            { label: 'Sync',      value: 'Not Connected' },
+            { label: 'Tasks',     value: 'No live assigned tasks yet' },
+          ].map(r => (
+            <div key={r.label} className="flex justify-between px-3 py-1.5 rounded-lg"
+              style={{ background: 'rgba(13,13,18,0.6)', border: '1px solid rgba(55,255,139,0.08)' }}>
+              <span style={{ color: '#5a5f6b' }}>{r.label}</span>
+              <span className="font-medium" style={{ color: '#37ff8b' }}>{r.value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="text-[10px] px-3 py-2 rounded-lg w-full text-center"
+          style={{ background: 'rgba(143,92,255,0.06)', border: '1px solid rgba(143,92,255,0.15)', color: '#8f5cff' }}>
+          Backend configuration is added in Run 7.
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function HomeScreen({ profile, pwaCase, pwaTasks, onTab, isDemo }) {
   const pendingCount = pwaTasks?.filter(t => t.status === 'New' || t.status === 'In Progress' || t.status === 'Needs Review').length ?? 0
   const riskStyle = RISK_COLOR[pwaCase?.riskLevel] || RISK_COLOR.Low
   const now = new Date()
@@ -485,7 +531,8 @@ function HomeScreen({ profile, pwaCase, pwaTasks, onTab }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN 2 — Current Crisis Brief
 // ═══════════════════════════════════════════════════════════════
-function CrisisBriefScreen({ pwaCase, onTab }) {
+function CrisisBriefScreen({ pwaCase, onTab, isDemo }) {
+  if (!isDemo) return <PwaLiveReady message="No live crisis case assigned yet. Cases will appear once a live backend is configured and an active case is assigned." />
   if (!pwaCase) return (
     <EmptySlate icon="AlertTriangle" message="No active case assigned." sub="Your dashboard will assign a case when ready." />
   )
@@ -583,7 +630,14 @@ const TASK_BTN_LABEL = {
   'Complete':     { label: 'Complete ✓', icon: 'CheckCircle', variant: 'ghost' },
 }
 
-function TasksScreen({ pwaTasks, updateTask, onTab, activePwaId }) {
+function TasksScreen({ pwaTasks, updateTask, onTab, activePwaId, isDemo }) {
+  if (!isDemo) {
+    return (
+      <div className="space-y-3">
+        <PwaLiveReady message="No live assigned tasks yet. Tasks will appear here once a live backend is configured and tasks are assigned to your secure PWA identity." />
+      </div>
+    )
+  }
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState('all')
   const { configTasks, pwaUpdateStatus, seedTaskData } = useTaskStore()
@@ -1193,7 +1247,7 @@ function EscalationScreen({ addEscalation, pwaEscalations, pwaCase }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN 8 — Sync Status
 // ═══════════════════════════════════════════════════════════════
-function SyncScreen({ profile }) {
+function SyncScreen({ profile, isDemo }) {
   const SYNC_ROWS = [
     { label: 'PWA Mode',         value: 'Demo',                   color: '#8f5cff' },
     { label: 'Sync Status',      value: 'Local Demo / No Backend', color: '#fbbf24' },
@@ -1456,6 +1510,8 @@ export default function DriverApp() {
 
   const { seedTaskData } = useTaskStore()
   const { seedIdentities, currentPwaId, pwaIdentities } = useIdentityStore()
+  const { mode: appMode } = useTrustStore()
+  const isDemo = appMode !== 'live'
 
   // Seed demo data on first load
   useEffect(() => {
@@ -1474,15 +1530,15 @@ export default function DriverApp() {
   // Screen renderer
   const renderScreen = () => {
     switch (activeTab) {
-      case 'home':     return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
-      case 'case':     return <CrisisBriefScreen pwaCase={pwaCase} onTab={setActiveTab} />
-      case 'tasks':    return <TasksScreen pwaTasks={pwaTasks} updateTask={updatePwaTask} onTab={setActiveTab} activePwaId={currentPwaId} />
+      case 'home':     return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} isDemo={isDemo} />
+      case 'case':     return <CrisisBriefScreen pwaCase={pwaCase} onTab={setActiveTab} isDemo={isDemo} />
+      case 'tasks':    return <TasksScreen pwaTasks={pwaTasks} updateTask={updatePwaTask} onTab={setActiveTab} activePwaId={currentPwaId} isDemo={isDemo} />
       case 'update':   return <UpdateScreen addPwaUpdate={addPwaUpdate} pwaUpdates={pwaUpdates} pwaCase={pwaCase} />
       case 'evidence': return <EvidenceScreen pwaNotes={pwaNotes} addNote={addNote} pwaCase={pwaCase} />
       case 'drafts':   return <DraftsScreen pwaDraftReviews={pwaDraftReviews} updateDraftReview={updateDraftReview} />
       case 'escalate': return <EscalationScreen addEscalation={addEscalation} pwaEscalations={pwaEscalations} pwaCase={pwaCase} />
       case 'identity': return <IdentityScreen onTab={setActiveTab} />
-      case 'sync':     return <SyncScreen profile={profile} />
+      case 'sync':     return <SyncScreen profile={profile} isDemo={isDemo} />
       default:         return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
     }
   }

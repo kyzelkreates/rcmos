@@ -279,7 +279,7 @@ function KpiCard({ label, value, sub, icon, dotColor, glowColor, onClick }) {
   )
 }
 
-function TrustOverviewSection({ cases, tasks, pwas, drafts, onTab }) {
+function TrustOverviewSection({ cases, tasks, pwas, drafts, onTab, isDemo }) {
   const active    = cases?.filter(c => c.status !== 'Resolved').length ?? 0
   const critical  = cases?.filter(c => c.riskLevel === 'Critical').length ?? 0
   const connected = pwas?.filter(p => p.syncStatus !== 'Offline').length ?? 0
@@ -417,7 +417,10 @@ function CaseDetail({ c, onClose }) {
   )
 }
 
-function ActiveRisksSection({ cases }) {
+function ActiveRisksSection({ cases, isDemo }) {
+  if (!isDemo && (!cases || cases.length === 0)) {
+    return <LiveEmptyState icon="AlertTriangle" title="No live reputation cases yet." message="No live reputation cases yet. Connect a backend in the configuration panel to start using TrustSheild OS™ with real records." />
+  }
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState('all')
 
@@ -586,7 +589,10 @@ function CrisisCommandSection({ cases, tasks, pwas, updates }) {
 // ═══════════════════════════════════════════════════════════════
 // SECTION 4 — Live Update Feed
 // ═══════════════════════════════════════════════════════════════
-function LiveFeedSection({ feedItems }) {
+function LiveFeedSection({ feedItems, isDemo }) {
+  if (!isDemo && (!feedItems || feedItems.length === 0)) {
+    return <LiveEmptyState icon="Radio" title="No live updates yet." message="Live Mode is active. Demo data is hidden. Connect a backend to receive real-time crisis and reputation updates." />
+  }
   const sorted = [...(feedItems || [])].sort((a, b) => new Date(b.ts) - new Date(a.ts))
 
   return (
@@ -717,7 +723,10 @@ function RespondersSection({ pwas, cases }) {
 // ═══════════════════════════════════════════════════════════════
 // SECTION 6 — Tasks Sent
 // ═══════════════════════════════════════════════════════════════
-function TasksSection({ tasks, cases }) {
+function TasksSection({ tasks, cases, isDemo }) {
+  if (!isDemo && (!tasks || tasks.length === 0)) {
+    return <LiveEmptyState icon="CheckSquare" title="No live tasks yet." message="Live Mode is active. Demo tasks are hidden. Create live tasks after backend configuration is complete." />
+  }
   const [filter, setFilter] = useState('all')
   const filtered = filter === 'all' ? tasks : tasks?.filter(t => t.status === filter)
 
@@ -795,7 +804,10 @@ const EVIDENCE_ICONS = {
   Evidence:        'FileText',
 }
 
-function EvidenceSection({ timeline, cases }) {
+function EvidenceSection({ timeline, cases, isDemo }) {
+  if (!isDemo && (!timeline || timeline.length === 0)) {
+    return <LiveEmptyState icon="FolderOpen" title="No live evidence yet." message="Live Mode is active. Demo evidence timeline is hidden. Submit evidence through PWA responders after backend is connected." />
+  }
   const sorted = [...(timeline || [])].sort((a, b) => new Date(b.ts) - new Date(a.ts))
 
   return (
@@ -853,7 +865,10 @@ function EvidenceSection({ timeline, cases }) {
 // ═══════════════════════════════════════════════════════════════
 // SECTION 8 — Response Drafts
 // ═══════════════════════════════════════════════════════════════
-function DraftsSection({ drafts, cases }) {
+function DraftsSection({ drafts, cases, isDemo }) {
+  if (!isDemo && (!drafts || drafts.length === 0)) {
+    return <LiveEmptyState icon="FileEdit" title="No live response drafts yet." message="Live Mode is active. Demo drafts are hidden. Response drafts will appear here once live cases and responses are submitted." />
+  }
   const TONE_COLORS = {
     'Holding Statement':    '#fbbf24',
     'Corrective':          '#37ff8b',
@@ -933,7 +948,10 @@ function DraftsSection({ drafts, cases }) {
 // ═══════════════════════════════════════════════════════════════
 // SECTION 9 — Stakeholder Updates
 // ═══════════════════════════════════════════════════════════════
-function UpdatesSection({ updates, cases }) {
+function UpdatesSection({ updates, cases, isDemo }) {
+  if (!isDemo && (!updates || updates.length === 0)) {
+    return <LiveEmptyState icon="Send" title="No live stakeholder updates yet." message="Live Mode is active. Demo updates are hidden. Stakeholder updates will appear here once live responses are underway." />
+  }
   return (
     <div className="space-y-2">
       {updates?.length > 0 ? updates.map(u => {
@@ -976,65 +994,252 @@ function UpdatesSection({ updates, cases }) {
 // ═══════════════════════════════════════════════════════════════
 // SECTION 10 — Backend Ready Status
 // ═══════════════════════════════════════════════════════════════
-function BackendStatusSection() {
+function BackendStatusSection({ isDemo, onEnableDemo, onEnableLive }) {
+  const [toast, setToast] = useState(null)
+
   const PROVIDERS = [
-    { name: 'Supabase', icon: 'Database', status: 'Future Run', color: '#37ff8b' },
-    { name: 'Firebase', icon: 'Flame', status: 'Future Run', color: '#fb923c' },
-    { name: 'AWS / Custom Endpoint', icon: 'Cloud', status: 'Future Run', color: '#38bdf8' },
-    { name: 'Generic REST API', icon: 'Globe', status: 'Future Run', color: '#c8ccd2' },
-    { name: 'Local-only Fallback', icon: 'HardDrive', status: 'Available Now', color: '#37ff8b' },
+    { name: 'Supabase',              icon: 'Database',  status: 'Coming in Run 7', color: '#37ff8b' },
+    { name: 'Firebase',              icon: 'Flame',     status: 'Coming in Run 7', color: '#fb923c' },
+    { name: 'AWS / Custom Endpoint', icon: 'Cloud',     status: 'Coming in Run 7', color: '#38bdf8' },
+    { name: 'Generic REST API',      icon: 'Globe',     status: 'Coming in Run 7', color: '#c8ccd2' },
+    { name: 'Local-only Fallback',   icon: 'HardDrive', status: 'Available Now',   color: '#37ff8b' },
   ]
+
+  const handleSwitch = (newMode) => {
+    if (newMode === 'live') {
+      onEnableLive?.()
+      setToast({ type: 'live', msg: 'Live Mode active. Demo data is hidden. Backend configuration is not connected yet.' })
+    } else {
+      onEnableDemo?.()
+      setToast({ type: 'demo', msg: 'Demo Mode active. Sample TrustSheild OS™ data is visible again.' })
+    }
+    setTimeout(() => setToast(null), 4000)
+  }
 
   return (
     <div className="space-y-4">
-      {/* Mode banner */}
-      <div
-        className="flex items-center justify-between p-4 rounded-xl"
-        style={{ background: 'rgba(143,92,255,0.07)', border: '1px solid rgba(143,92,255,0.2)' }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(143,92,255,0.12)', border: '1px solid rgba(143,92,255,0.25)' }}>
-            <Icon name="Database" size={18} style={{ color: '#8f5cff' }} />
-          </div>
-          <div>
-            <div className="text-sm font-bold" style={{ color: '#8f5cff' }}>Demo Mode Active</div>
-            <div className="text-xs mt-0.5" style={{ color: '#5a5f6b' }}>All data is local and simulated — no backend connected</div>
-          </div>
+      {/* Toast */}
+      {toast && (
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl" style={toast.type === 'live' ? { background: 'rgba(55,255,139,0.07)', border: '1px solid rgba(55,255,139,0.25)' } : { background: 'rgba(143,92,255,0.07)', border: '1px solid rgba(143,92,255,0.25)' }}>
+          <Icon name="CheckCircle" size={14} style={{ color: toast.type === 'live' ? '#37ff8b' : '#8f5cff' }} />
+          <span className="text-xs" style={{ color: '#f5f5f2' }}>{toast.msg}</span>
+          <button onClick={() => setToast(null)} className="ml-auto" style={{ color: '#5a5f6b' }}><Icon name="X" size={12} /></button>
         </div>
-        <DemoBadge />
+      )}
+
+      {/* ── Mode status banner ── */}
+      <div className="p-4 rounded-xl" style={isDemo ? { background: 'rgba(143,92,255,0.07)', border: '1px solid rgba(143,92,255,0.2)' } : { background: 'rgba(55,255,139,0.06)', border: '1px solid rgba(55,255,139,0.2)' }}>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={isDemo ? { background: 'rgba(143,92,255,0.12)', border: '1px solid rgba(143,92,255,0.25)' } : { background: 'rgba(55,255,139,0.1)', border: '1px solid rgba(55,255,139,0.25)' }}>
+              <Icon name={isDemo ? 'FlaskConical' : 'Radio'} size={18} style={{ color: isDemo ? '#8f5cff' : '#37ff8b' }} />
+            </div>
+            <div>
+              <div className="text-sm font-bold" style={{ color: isDemo ? '#8f5cff' : '#37ff8b' }}>
+                {isDemo ? 'Demo Mode Active' : 'Live Mode Active — Backend Not Configured Yet'}
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: '#5a5f6b' }}>
+                {isDemo ? 'Demo Mode shows sample TrustSheild OS™ crisis/reputation workflows.' : 'Live Mode is active. Demo data is hidden to prevent demo/live data mixing.'}
+              </div>
+            </div>
+          </div>
+          <ModeStatusBadge isDemo={isDemo} />
+        </div>
       </div>
 
-      {/* Provider list */}
+      {/* ── Demo/Live Mode Toggle ── */}
+      <div className="p-4 rounded-xl space-y-3" style={{ background: 'rgba(13,13,18,0.9)', border: '1px solid rgba(214,168,79,0.1)' }}>
+        <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(214,168,79,0.5)' }}>
+          Demo / Live Mode Control
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Demo Mode card */}
+          <button
+            onClick={() => !isDemo && handleSwitch('demo')}
+            className="flex flex-col items-start gap-2 p-4 rounded-xl text-left transition-all"
+            style={isDemo
+              ? { background: 'rgba(143,92,255,0.12)', border: '2px solid rgba(143,92,255,0.4)', cursor: 'default' }
+              : { background: 'rgba(13,13,18,0.6)', border: '1px solid rgba(90,95,107,0.2)', cursor: 'pointer' }
+            }
+          >
+            <div className="flex items-center gap-2 w-full">
+              <Icon name="FlaskConical" size={16} style={{ color: isDemo ? '#8f5cff' : '#5a5f6b' }} />
+              <span className="text-sm font-bold" style={{ color: isDemo ? '#8f5cff' : '#5a5f6b' }}>Demo Mode</span>
+              {isDemo && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(143,92,255,0.2)', color: '#8f5cff' }}>ACTIVE</span>}
+            </div>
+            <p className="text-[10px] leading-relaxed" style={{ color: isDemo ? '#a87dff' : '#3a3f4b' }}>
+              Shows realistic sample data. Used for investor demos, testing, portfolio presentations, and capability showcases.
+            </p>
+          </button>
+          {/* Live Mode card */}
+          <button
+            onClick={() => isDemo && handleSwitch('live')}
+            className="flex flex-col items-start gap-2 p-4 rounded-xl text-left transition-all"
+            style={!isDemo
+              ? { background: 'rgba(55,255,139,0.08)', border: '2px solid rgba(55,255,139,0.3)', cursor: 'default' }
+              : { background: 'rgba(13,13,18,0.6)', border: '1px solid rgba(90,95,107,0.2)', cursor: 'pointer' }
+            }
+          >
+            <div className="flex items-center gap-2 w-full">
+              <Icon name="Radio" size={16} style={{ color: !isDemo ? '#37ff8b' : '#5a5f6b' }} />
+              <span className="text-sm font-bold" style={{ color: !isDemo ? '#37ff8b' : '#5a5f6b' }}>Live Mode</span>
+              {!isDemo && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(55,255,139,0.15)', color: '#37ff8b' }}>ACTIVE</span>}
+            </div>
+            <p className="text-[10px] leading-relaxed" style={{ color: !isDemo ? '#37ff8b' : '#3a3f4b' }}>
+              Hides demo data and prepares the system for backend-connected real records. Backend setup is completed in later runs.
+            </p>
+          </button>
+        </div>
+        {/* Inline warning when switching to live */}
+        {isDemo && (
+          <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: 'rgba(55,255,139,0.04)', border: '1px solid rgba(55,255,139,0.12)' }}>
+            <Icon name="Info" size={12} style={{ color: '#37ff8b', flexShrink: 0, marginTop: 1 }} />
+            <p className="text-[10px]" style={{ color: '#5a5f6b' }}>Switching to Live Mode hides demo data and prepares the system for backend-connected real records. Backend setup is completed in later runs. Demo data is preserved and can be restored at any time.</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Backend provider placeholder ── */}
       <div>
         <div className="text-xs font-semibold mb-2 uppercase tracking-widest" style={{ color: 'rgba(214,168,79,0.5)' }}>
-          Supported Backend Providers
+          Live Backend Configuration {!isDemo && '— Not Connected Yet'}
         </div>
         <div className="space-y-2">
           {PROVIDERS.map(p => (
-            <div key={p.name}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl"
-              style={{ background: 'rgba(13,13,18,0.8)', border: '1px solid rgba(214,168,79,0.08)' }}
-            >
+            <div key={p.name} className="flex items-center gap-3 px-4 py-3 rounded-xl"
+              style={{ background: 'rgba(13,13,18,0.8)', border: '1px solid rgba(214,168,79,0.08)', opacity: p.status === 'Coming in Run 7' ? 0.7 : 1 }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ background: `${p.color}08`, border: `1px solid ${p.color}20` }}>
                 <Icon name={p.icon} size={14} style={{ color: p.color }} />
               </div>
               <span className="text-sm flex-1" style={{ color: '#c8ccd2' }}>{p.name}</span>
               <span className="text-xs px-2 py-0.5 rounded"
-                style={{ background: p.status === 'Available Now' ? 'rgba(55,255,139,0.1)' : 'rgba(90,95,107,0.15)', color: p.status === 'Available Now' ? '#37ff8b' : '#5a5f6b', border: `1px solid ${p.status === 'Available Now' ? 'rgba(55,255,139,0.2)' : 'rgba(90,95,107,0.2)'}` }}>
+                style={p.status === 'Available Now'
+                  ? { background: 'rgba(55,255,139,0.1)', color: '#37ff8b', border: '1px solid rgba(55,255,139,0.2)' }
+                  : { background: 'rgba(90,95,107,0.15)', color: '#5a5f6b', border: '1px solid rgba(90,95,107,0.2)' }}>
                 {p.status}
               </span>
             </div>
           ))}
         </div>
+        <p className="text-[10px] mt-2 px-1" style={{ color: '#3a3f4b' }}>
+          Backend provider configuration, save/test connection, and SQL setup are added in Run 7.
+        </p>
       </div>
 
-      <div
-        className="p-3 rounded-xl text-xs"
-        style={{ background: 'rgba(214,168,79,0.05)', border: '1px solid rgba(214,168,79,0.15)', color: '#a8adb7' }}
+      {/* ── Safety advisory ── */}
+      <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: 'rgba(143,92,255,0.05)', border: '1px solid rgba(143,92,255,0.15)' }}>
+        <Icon name="ShieldCheck" size={12} style={{ color: '#8f5cff', flexShrink: 0, marginTop: 1 }} />
+        <p className="text-[10px]" style={{ color: '#8f5cff' }}>{APP_CONFIG.aiAdvisory}</p>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RUN 6 — MODE SYSTEM COMPONENTS
+// Demo/Live toggle, empty live states, backend config placeholder
+// ═══════════════════════════════════════════════════════════════
+
+// ─── ModeStatusBadge ─────────────────────────────────────────
+function ModeStatusBadge({ isDemo }) {
+  if (isDemo) return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+      style={{ background: 'rgba(143,92,255,0.12)', color: '#8f5cff', border: '1px solid rgba(143,92,255,0.3)' }}>
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#8f5cff', boxShadow: '0 0 6px rgba(143,92,255,0.8)' }} />
+      Demo Mode
+    </span>
+  )
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+      style={{ background: 'rgba(55,255,139,0.1)', color: '#37ff8b', border: '1px solid rgba(55,255,139,0.3)' }}>
+      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#37ff8b', boxShadow: '0 0 6px rgba(55,255,139,0.8)' }} />
+      Live Mode
+    </span>
+  )
+}
+
+// ─── ModeToggleButton ─────────────────────────────────────────
+function ModeToggleButton({ isDemo, onEnable, onDisable }) {
+  const [confirming, setConfirming] = useState(false)
+
+  if (!isDemo) {
+    // In live mode — show "Switch to Demo" button
+    return (
+      <button
+        onClick={onEnable}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        style={{ color: '#8f5cff', border: '1px solid rgba(143,92,255,0.3)', background: 'rgba(143,92,255,0.08)' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(143,92,255,0.15)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(143,92,255,0.08)'}
       >
-        <strong style={{ color: '#d6a84f' }}>Note:</strong> Live Mode and backend configuration will be implemented in a later run. When Live Mode is enabled, this panel will open a secure backend configuration interface with connection testing and credential management.
+        <Icon name="FlaskConical" size={11} />
+        Return to Demo Mode
+      </button>
+    )
+  }
+
+  // In demo mode — show "Switch to Live" with inline confirmation
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(55,255,139,0.08)', border: '1px solid rgba(55,255,139,0.25)' }}>
+        <span className="text-xs" style={{ color: '#a8adb7' }}>Switch to Live Mode?</span>
+        <button onClick={() => { onDisable(); setConfirming(false) }}
+          className="text-xs font-semibold px-2 py-0.5 rounded"
+          style={{ background: 'rgba(55,255,139,0.15)', color: '#37ff8b', border: '1px solid rgba(55,255,139,0.3)' }}>
+          Confirm
+        </button>
+        <button onClick={() => setConfirming(false)}
+          className="text-xs px-1.5 py-0.5 rounded"
+          style={{ color: '#5a5f6b', border: '1px solid rgba(90,95,107,0.2)' }}>
+          Cancel
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+      style={{ color: '#37ff8b', border: '1px solid rgba(55,255,139,0.25)', background: 'rgba(55,255,139,0.06)' }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(55,255,139,0.12)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'rgba(55,255,139,0.06)'}
+      title="Switching to Live Mode hides demo data and prepares the system for backend-connected real records."
+    >
+      <Icon name="Radio" size={11} />
+      Switch to Live Mode
+    </button>
+  )
+}
+
+// ─── LiveEmptyState ───────────────────────────────────────────
+// Generic empty-state card shown in any section when live mode
+// is active and no real backend records exist.
+function LiveEmptyState({ icon = 'Radio', title, message, extra }) {
+  return (
+    <div className="flex flex-col items-center py-10 gap-4">
+      {/* Live mode banner */}
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ background: 'rgba(55,255,139,0.07)', border: '1px solid rgba(55,255,139,0.2)' }}>
+        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#37ff8b', boxShadow: '0 0 6px rgba(55,255,139,0.8)' }} />
+        <span className="text-xs font-semibold" style={{ color: '#37ff8b' }}>Live Mode Active — Backend Not Configured Yet</span>
+      </div>
+      {/* Icon */}
+      <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(55,255,139,0.05)', border: '1px solid rgba(55,255,139,0.1)' }}>
+        <Icon name={icon} size={26} style={{ color: 'rgba(55,255,139,0.18)' }} />
+      </div>
+      {/* Message */}
+      <div className="text-center space-y-1.5 max-w-sm">
+        <div className="text-sm font-semibold" style={{ color: '#5a5f6b' }}>{title || 'No live data yet'}</div>
+        <p className="text-xs leading-relaxed" style={{ color: '#3a3f4b' }}>
+          {message || 'Live Mode is active. Demo data is hidden to prevent demo/live data mixing. Connect a backend in the configuration panel to start using TrustSheild OS™ with real records.'}
+        </p>
+        {extra && <p className="text-[10px]" style={{ color: '#2a2f38' }}>{extra}</p>}
+      </div>
+      {/* Hint */}
+      <div className="text-[10px] px-3 py-2 rounded-lg" style={{ background: 'rgba(143,92,255,0.06)', border: '1px solid rgba(143,92,255,0.15)', color: '#8f5cff' }}>
+        Backend configuration is added in Run 7 →
       </div>
     </div>
   )
@@ -1043,7 +1248,7 @@ function BackendStatusSection() {
 // ═══════════════════════════════════════════════════════════════
 // SECTION 11 — AI Agent Centre (Placeholder)
 // ═══════════════════════════════════════════════════════════════
-function AIAgentSection() {
+function AIAgentSection({ isDemo }) {
   const agents = Object.entries(APP_CONFIG.aiAgents).map(([key, name]) => ({
     key,
     name,
@@ -1052,6 +1257,13 @@ function AIAgentSection() {
     description: key === 'trustTriage' ? 'Rapid initial assessment of incoming reputation events.' : key === 'reputationRisk' ? 'Continuous risk scoring across channels and cases.' : key === 'crisisResponse' ? 'Coordinated response workflow guidance.' : key === 'responseDrafting' ? 'Human-reviewed draft communication support.' : key === 'evidenceTimeline' ? 'Structured evidence and timeline organisation.' : key === 'stakeholderUpdate' ? 'Stakeholder communication coordination.' : 'Structured trust recovery action planning.',
   }))
 
+  if (!isDemo) {
+    return (
+      <LiveEmptyState icon="Brain" title="AI providers not configured yet."
+        message="Live Mode is active. AI Agent Centre is advisory only. No AI provider is connected. Configuration is added in later runs."
+        extra="AI guidance is advisory and must be reviewed by a responsible human before action." />
+    )
+  }
   return (
     <div className="space-y-4">
       {/* Advisory banner */}
@@ -1106,7 +1318,7 @@ function AIAgentSection() {
 // ═══════════════════════════════════════════════════════════════
 export default function Dashboard() {
   const navigate   = useNavigate()
-  const { activeTab, setActiveTab, cases, tasks, pwas, timeline, drafts, updates, feedItems, seedDemoData, resetToDemo } = useTrustStore()
+  const { activeTab, setActiveTab, cases, tasks, pwas, timeline, drafts, updates, feedItems, seedDemoData, resetToDemo, mode, enableDemo, enableLive } = useTrustStore()
   const { seedTaskData, resetTaskData } = useTaskStore()
   const { seedIdentities } = useIdentityStore()
 
@@ -1117,7 +1329,20 @@ export default function Dashboard() {
     seedIdentities(IDENTITY_SEED_DATA)
   }, [])
 
-  const data = { cases, tasks, pwas, timeline, drafts, updates, feedItems }
+  const isDemo = mode !== 'live'
+  const isLive = mode === 'live'
+
+  // In live mode, filter out demo records from live views.
+  // Demo records are preserved in store — only hidden from rendering.
+  const viewCases    = isDemo ? cases    : (cases    || []).filter(r => r.source === 'live')
+  const viewTasks    = isDemo ? tasks    : (tasks    || []).filter(r => r.source === 'live')
+  const viewPwas     = isDemo ? pwas     : (pwas     || []).filter(r => r.source === 'live')
+  const viewTimeline = isDemo ? timeline : (timeline || []).filter(r => r.source === 'live')
+  const viewDrafts   = isDemo ? drafts   : (drafts   || []).filter(r => r.source === 'live')
+  const viewUpdates  = isDemo ? updates  : (updates  || []).filter(r => r.source === 'live')
+  const viewFeed     = isDemo ? feedItems: (feedItems|| []).filter(r => r.source === 'live')
+
+  const data = { cases: viewCases, tasks: viewTasks, pwas: viewPwas, timeline: viewTimeline, drafts: viewDrafts, updates: viewUpdates, feedItems: viewFeed }
   const handleReset = useCallback(() => { if (window.confirm('Reset all demo data?')) resetToDemo(DEMO_DATA) }, [resetToDemo])
 
   return (
@@ -1130,27 +1355,27 @@ export default function Dashboard() {
             <h1 className="text-lg font-bold font-display" style={{ color: '#d6a84f', textShadow: '0 0 16px rgba(214,168,79,0.3)' }}>
               TrustSheild Command Dashboard
             </h1>
-            <div className="ts-demo-banner">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#8f5cff', boxShadow: '0 0 6px rgba(143,92,255,0.8)' }} />
-              Demo Mode
-            </div>
+            <ModeStatusBadge isDemo={isDemo} />
           </div>
           <p className="text-xs" style={{ color: '#5a5f6b' }}>
             {APP_CONFIG.tagline} · {APP_CONFIG.globalBrand}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={handleReset}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-            style={{ color: '#5a5f6b', border: '1px solid rgba(90,95,107,0.2)', background: 'transparent' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#d6a84f'}
-            onMouseLeave={e => e.currentTarget.style.color = '#5a5f6b'}
-            title="Reset demo data"
-          >
-            <Icon name="RefreshCw" size={11} />
-            Reset Demo
-          </button>
+          {isDemo && (
+            <button
+              onClick={handleReset}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={{ color: '#5a5f6b', border: '1px solid rgba(90,95,107,0.2)', background: 'transparent' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#d6a84f'}
+              onMouseLeave={e => e.currentTarget.style.color = '#5a5f6b'}
+              title="Reset demo data"
+            >
+              <Icon name="RefreshCw" size={11} />
+              Reset Demo
+            </button>
+          )}
+          <ModeToggleButton isDemo={isDemo} onEnable={enableDemo} onDisable={enableLive} />
           <button
             onClick={() => navigate(ROUTES.DISPATCH)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
@@ -1170,13 +1395,13 @@ export default function Dashboard() {
       {/* ── Section Content ────────────────────────────────── */}
       {activeTab === 'overview' && (
         <SectionCard title="Trust Overview" icon="ShieldCheck" iconColor="#d6a84f" subtitle="Live reputation & crisis status">
-          <TrustOverviewSection cases={cases} tasks={tasks} pwas={pwas} drafts={drafts} onTab={setActiveTab} />
+          <TrustOverviewSection cases={viewCases} tasks={viewTasks} pwas={viewPwas} drafts={viewDrafts} onTab={setActiveTab} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'risks' && (
         <SectionCard title="Active Reputation Risks" icon="AlertTriangle" iconColor="#f87171" subtitle="Click a case to expand details">
-          <ActiveRisksSection cases={cases} />
+          <ActiveRisksSection cases={viewCases} isDemo={isDemo} />
         </SectionCard>
       )}
 
@@ -1192,56 +1417,56 @@ export default function Dashboard() {
 
       {activeTab === 'feed' && (
         <SectionCard title="Live Update Feed" icon="Radio" iconColor="#37ff8b" subtitle="Real-time actions from PWAs and dashboard">
-          <LiveFeedSection feedItems={feedItems} />
+          <LiveFeedSection feedItems={viewFeed} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'responders' && (
         <SectionCard title="PWA Identity Manager" icon="Users" iconColor="#37ff8b" subtitle="Create and manage individual PWA identities — demo/local mode">
-          <PwaIdentityManager cases={cases} />
+          <PwaIdentityManager cases={viewCases} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'tasks' && (
         <SectionCard title="Tasks Sent to PWAs" icon="CheckSquare" iconColor="#8f5cff" subtitle="Response tasks sent and tracked from the dashboard">
-          <TasksSection tasks={tasks} cases={cases} />
+          <TasksSection tasks={viewTasks} cases={viewCases} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'taskconfig' && (
         <SectionCard title="PWA Task Configuration" icon="Settings" iconColor="#d6a84f"
           subtitle="Create, assign, and track response tasks for PWA users — demo/local mode">
-          <TaskConfigPanel cases={cases} />
+          <TaskConfigPanel cases={viewCases} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'evidence' && (
         <SectionCard title="Evidence & Crisis Timeline" icon="FolderOpen" iconColor="#d6a84f" subtitle="Chronological evidence log and crisis events">
-          <EvidenceSection timeline={timeline} cases={cases} />
+          <EvidenceSection timeline={viewTimeline} cases={viewCases} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'drafts' && (
         <SectionCard title="Response Drafts" icon="FileEdit" iconColor="#fb923c" subtitle="Human-reviewed response drafts — AI advisory only">
-          <DraftsSection drafts={drafts} cases={cases} />
+          <DraftsSection drafts={viewDrafts} cases={viewCases} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'updates' && (
         <SectionCard title="Stakeholder Updates" icon="Send" iconColor="#c8ccd2" subtitle="Updates to clients, teams, legal, PR, and leadership">
-          <UpdatesSection updates={updates} cases={cases} />
+          <UpdatesSection updates={viewUpdates} cases={viewCases} isDemo={isDemo} />
         </SectionCard>
       )}
 
       {activeTab === 'backend' && (
-        <SectionCard title="Backend Ready Status" icon="Database" iconColor="#8f5cff" subtitle="Demo Mode active — Live Mode and backend configuration coming in a later run">
-          <BackendStatusSection />
+        <SectionCard title="Backend Ready Status" icon="Database" iconColor="#8f5cff" subtitle={isDemo ? 'Demo Mode active — all data is local and simulated' : 'Live Mode active — backend not yet configured'}>
+          <BackendStatusSection isDemo={isDemo} onEnableDemo={enableDemo} onEnableLive={enableLive} />
         </SectionCard>
       )}
 
       {activeTab === 'ai' && (
         <SectionCard title="AI Agent Centre" icon="Brain" iconColor="#8f5cff" subtitle="Advisory placeholders — full AI integration in future runs">
-          <AIAgentSection />
+          <AIAgentSection isDemo={isDemo} />
         </SectionCard>
       )}
 

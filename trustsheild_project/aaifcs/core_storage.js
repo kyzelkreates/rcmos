@@ -303,9 +303,28 @@ export const useTrustStore = create((set, get) => ({
   feedItems:   persist.get(STORAGE_KEYS.TS_FEED,     null),
 
   // ── Actions ───────────────────────────────────────────────
-  setMode: (mode) => {
-    persist.set(STORAGE_KEYS.TS_MODE, mode)
-    set({ mode })
+  // ── Extended app mode state (Run 6) ──────────────────────
+  liveReady:          false,       // true once backend is configured (Run 7)
+  backendConfigured:  false,       // true once a real provider is connected
+  lastModeChange:     persist.get(STORAGE_KEYS.TS_MODE, 'demo'),
+
+  setMode: (newMode) => {
+    const prev = get().mode
+    if (prev === newMode) return
+    persist.set(STORAGE_KEYS.TS_MODE, newMode)
+    set({
+      mode:           newMode,
+      lastModeChange: new Date().toISOString(),
+    })
+  },
+  // Convenience helpers
+  enableDemo: () => {
+    persist.set(STORAGE_KEYS.TS_MODE, 'demo')
+    set({ mode: 'demo', lastModeChange: new Date().toISOString() })
+  },
+  enableLive: () => {
+    persist.set(STORAGE_KEYS.TS_MODE, 'live')
+    set({ mode: 'live', lastModeChange: new Date().toISOString() })
   },
 
   setActiveTab: (tab) => {

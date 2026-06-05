@@ -20,7 +20,7 @@ export const APP_CONFIG = {
   name:        'TrustSheild OS™',
   shortName:   'TrustSheild',
   version:     '1.0.0',
-  buildStage:  'Run 5 — Unique PWA ID + Pairing/Sync-Code System',
+  buildStage:  'Run 6 — Demo/Live Toggle + Empty Live Mode Separation',
 
   // Branding lines used globally across UI
   brandLine:   'Powered by 4P3X Intelligent AI™',
