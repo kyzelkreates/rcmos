@@ -721,6 +721,195 @@ export default function Landing() {
           </GlassCard>
         </section>
 
+
+        {/* ════════════════════════════════
+            8b. PWA DEMO PREVIEW
+        ════════════════════════════════ */}
+        <section className="space-y-8">
+          <Divider label="Crisis Response PWA — Live Demo Preview" />
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-black font-display" style={{ color: T.green }}>
+              See the Crisis Response PWA in Action
+            </h2>
+            <p className="text-sm max-w-xl mx-auto" style={{ color: T.mid }}>
+              A realistic preview of what a responder sees on their device during an active reputation crisis.
+              Click "Open Live PWA" to use the real, fully working version.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+            {/* Mobile frame mockup */}
+            <div className="flex justify-center">
+              <div className="w-full max-w-xs rounded-3xl overflow-hidden"
+                style={{ background: '#08080C', border: '2px solid rgba(55,255,139,0.2)',
+                         boxShadow: '0 0 60px rgba(55,255,139,0.08), 0 0 120px rgba(214,168,79,0.04)' }}>
+
+                {/* Phone status bar */}
+                <div className="flex items-center justify-between px-4 py-2"
+                  style={{ background: '#050508', borderBottom: '1px solid rgba(55,255,139,0.08)' }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.green }} />
+                    <span className="text-[9px] font-bold" style={{ color: T.green }}>LIVE DEMO</span>
+                  </div>
+                  <div className="text-[9px] font-bold" style={{ color: T.gold }}>TrustSheild OS™</div>
+                  <div className="text-[9px]" style={{ color: T.muted }}>PWA</div>
+                </div>
+
+                {/* PWA identity bar */}
+                <div className="px-4 py-3 flex items-center gap-3"
+                  style={{ background: 'rgba(214,168,79,0.04)', borderBottom: '1px solid rgba(214,168,79,0.08)' }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs flex-shrink-0"
+                    style={{ background: 'rgba(214,168,79,0.12)', color: T.gold, border: '1px solid rgba(214,168,79,0.25)' }}>
+                    SK
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold truncate" style={{ color: T.silver }}>Sarah K. — PR Lead</div>
+                    <div className="text-[10px]" style={{ color: T.muted }}>PWA ID: TS-PWA-0001 · Demo Mode</div>
+                  </div>
+                </div>
+
+                {/* Active crisis card */}
+                <div className="p-4 space-y-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(214,168,79,0.4)' }}>
+                    ACTIVE CRISIS BRIEF
+                  </div>
+
+                  <div className="rounded-xl p-3 space-y-2"
+                    style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)' }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold" style={{ color: '#fca5a5' }}>Negative Review Spike</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded font-bold"
+                        style={{ background: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)' }}>
+                        HIGH RISK
+                      </span>
+                    </div>
+                    <div className="text-[10px]" style={{ color: T.muted }}>Meridian Cafe — 14 new 1-star Google reviews in 2 hours.</div>
+                    <div className="flex items-center gap-2">
+                      <Icon name="Clock" size={10} style={{ color: T.muted }} />
+                      <span className="text-[9px]" style={{ color: T.muted }}>Dashboard updated 4 min ago</span>
+                    </div>
+                  </div>
+
+                  {/* Assigned task */}
+                  <div className="rounded-xl p-3 space-y-2"
+                    style={{ background: 'rgba(214,168,79,0.06)', border: '1px solid rgba(214,168,79,0.15)' }}>
+                    <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: T.gold }}>
+                      Your Assigned Task
+                    </div>
+                    <div className="text-xs font-semibold" style={{ color: T.silver }}>
+                      Submit Situation Update
+                    </div>
+                    <div className="text-[10px] leading-relaxed" style={{ color: T.muted }}>
+                      Confirm receipt of briefing, submit a current situation update, and upload any evidence screenshots.
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] px-2 py-0.5 rounded"
+                        style={{ background: 'rgba(251,146,60,0.12)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.25)' }}>
+                        Due Soon
+                      </span>
+                      <span className="text-[9px] px-2 py-0.5 rounded"
+                        style={{ background: 'rgba(143,92,255,0.08)', color: '#a78bfa', border: '1px solid rgba(143,92,255,0.2)' }}>
+                        Human Review Required
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* AI guidance snippet */}
+                  <div className="rounded-xl p-3 space-y-1.5"
+                    style={{ background: 'rgba(143,92,255,0.06)', border: '1px solid rgba(143,92,255,0.18)' }}>
+                    <div className="flex items-center gap-1.5">
+                      <Icon name="Brain" size={10} style={{ color: T.purple }} />
+                      <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: T.purple }}>
+                        4P3X AI Advisory
+                      </span>
+                    </div>
+                    <div className="text-[10px] leading-relaxed" style={{ color: '#c4b5fd' }}>
+                      Respond within 2 hours to limit spread. Avoid defensive language. Acknowledge, investigate, respond.
+                    </div>
+                    <div className="text-[9px]" style={{ color: 'rgba(143,92,255,0.5)' }}>
+                      Advisory only — human review required before action.
+                    </div>
+                  </div>
+
+                  {/* Evidence note example */}
+                  <div className="rounded-xl p-3 space-y-1.5"
+                    style={{ background: 'rgba(55,255,139,0.05)', border: '1px solid rgba(55,255,139,0.15)' }}>
+                    <div className="flex items-center gap-1.5">
+                      <Icon name="FolderOpen" size={10} style={{ color: T.green }} />
+                      <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: T.green }}>
+                        Latest Evidence Note
+                      </span>
+                    </div>
+                    <div className="text-[10px]" style={{ color: T.mid }}>
+                      Screenshots captured — 14 reviews identified, 3 suspected bot accounts. Uploaded to dashboard evidence log.
+                    </div>
+                  </div>
+
+                  {/* PWA action buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="rounded-lg py-2 text-center text-[10px] font-bold"
+                      style={{ background: 'rgba(55,255,139,0.08)', border: '1px solid rgba(55,255,139,0.25)', color: T.green }}>
+                      Submit Update
+                    </div>
+                    <div className="rounded-lg py-2 text-center text-[10px] font-bold"
+                      style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', color: '#f87171' }}>
+                      Escalate
+                    </div>
+                  </div>
+
+                  {/* Sync status */}
+                  <div className="flex items-center justify-between pt-1"
+                    style={{ borderTop: '1px solid rgba(214,168,79,0.06)' }}>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: T.gold }} />
+                      <span className="text-[9px]" style={{ color: T.muted }}>Demo sync · 2 pending</span>
+                    </div>
+                    <div className="text-[9px]" style={{ color: T.muted }}>Offline queue: 0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* PWA feature explanation */}
+            <div className="space-y-4">
+              <GlassCard goldBorder>
+                <div className="p-5 space-y-4">
+                  <div className="text-sm font-bold" style={{ color: T.green }}>What the PWA Shows Each Responder</div>
+                  <div className="space-y-3">
+                    {[
+                      { icon: 'AlertTriangle', color: T.red,    title: 'Active Crisis Brief',          body: 'The crisis title, risk level, current status, and key facts — Delivered instantly to the responder’s device.' },
+                      { icon: 'CheckSquare',   color: T.gold,   title: 'Assigned Response Task',       body: 'The specific action required: submit update, upload evidence, approve a draft, or request escalation.' },
+                      { icon: 'Brain',         color: T.purple, title: '4P3X AI Advisory Guidance',    body: 'Step-by-step advisory guidance tailored to the crisis type — always marked advisory, human review required.' },
+                      { icon: 'FolderOpen',    color: T.green,  title: 'Evidence & Notes',             body: 'Capture and submit evidence, screenshots, or situation notes directly from the mobile device.' },
+                      { icon: 'ArrowLeftRight',color: T.gold,   title: 'Dashboard Sync Status',        body: 'Live sync state: when the dashboard last updated, pending submissions, and offline queue count.' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                          style={{ background: `${item.color}0e`, border: `1px solid ${item.color}22` }}>
+                          <Icon name={item.icon} size={13} style={{ color: item.color }} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold mb-0.5" style={{ color: T.silver }}>{item.title}</div>
+                          <p className="text-[11px] leading-relaxed" style={{ color: T.muted }}>{item.body}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </GlassCard>
+
+              <Btn onClick={goPWA} variant="green" fullWidth size="lg">
+                <Icon name="Smartphone" size={15} />
+                Open Live Crisis Response PWA
+              </Btn>
+              <p className="text-[10px] text-center" style={{ color: T.muted }}>
+                Installable on Android, iPhone, tablet, and desktop. No app store required.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* ════════════════════════════════
             9. DEMO / LIVE MODE
         ════════════════════════════════ */}
