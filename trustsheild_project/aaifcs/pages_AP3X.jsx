@@ -133,7 +133,7 @@ function NoJobs({ onImport }) {
       </div>
       <div className="text-center">
         <p className="text-slate-400 text-sm font-medium">No jobs assigned</p>
-        <p className="text-slate-600 text-xs mt-1">Ask fleet to send your assignment via the sync options.</p>
+        <p className="text-slate-600 text-xs mt-1">Ask command to send your assignment via the sync options.</p>
       </div>
 
       {/* Manual import */}
@@ -248,7 +248,7 @@ export default function AP3X() {
         setMapMarkers([{ id: 'driver', lat: t.lat, lng: t.lng, label: driverName.slice(0,2).toUpperCase(), status: 'active' }])
         mapRef.current?.flyTo([t.lat, t.lng], 16)
       },
-      (err) => console.warn('[GPS]', err),
+      (err) => console.warn('[Location]', err),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     )
   }, [driverId, driverName, activeJob, telemetry.speed, telemetry.heading, telemetry.fuel])
@@ -323,7 +323,7 @@ export default function AP3X() {
                   : 'bg-slate-800/60 border border-slate-700 text-slate-400 hover:text-slate-300'
               }`}>
               <Icon name={gpsActive ? 'MapPin' : 'MapPinOff'} size={12} />
-              {gpsActive ? 'GPS On' : 'GPS Off'}
+              {gpsActive ? 'Location On' : 'Location Off'}
             </button>
           </div>
         </div>
@@ -334,7 +334,7 @@ export default function AP3X() {
         {[
           { key: 'job',  label: 'Current Job',           icon: 'Package'      },
           { key: 'map',  label: 'Map',                   icon: 'Map'          },
-          { key: 'chat', label: 'Fleet Chat',            icon: 'MessageSquare'},
+          { key: 'chat', label: 'Command Chat',            icon: 'MessageSquare'},
           { key: 'all',  label: `All Jobs (${jobs.length})`, icon: 'List'    },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
@@ -406,7 +406,7 @@ export default function AP3X() {
         )}
       </div>
 
-        {/* Tab: Fleet Chat */}
+        {/* Tab: Command Chat */}
         {tab === 'chat' && (
           <div className="flex flex-col h-[calc(100vh-280px)] min-h-[300px] px-3 pb-2">
             {/* Message list */}
@@ -414,7 +414,7 @@ export default function AP3X() {
               {chatMsgs.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-32 gap-2 text-slate-700">
                   <Icon name="MessageSquare" size={24} className="opacity-20" />
-                  <span className="text-xs text-center">Send a message to TrustSheild operations.<br/>Fleet can reply here in real time.</span>
+                  <span className="text-xs text-center">Send a message to TrustSheild operations.<br/>Command can reply here in real time.</span>
                 </div>
               )}
               {chatMsgs.map((msg, i) => (
@@ -462,7 +462,7 @@ export default function AP3X() {
       <div className="px-4 py-2 border-t border-slate-800/60 flex items-center gap-3 flex-shrink-0">
         <StatusDot status={gpsActive ? 'online' : 'idle'} />
         <span className="text-2xs text-slate-600">
-          {gpsActive ? 'Live GPS · sending telemetry to fleet' : 'GPS offline'}
+          {gpsActive ? 'Location active · sending updates' : 'Location offline'}
         </span>
         {telemetry.lat && (
           <span className="ml-auto text-2xs text-slate-700 font-mono">

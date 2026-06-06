@@ -42,7 +42,7 @@ function DriverSyncModal({ job, onClose }) {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="bg-[#0d1426] border border-slate-800/60 sm:rounded-xl rounded-t-xl p-6 w-full sm:max-w-sm text-center">
         <Icon name="AlertCircle" size={32} className="text-amber-400 mx-auto mb-3" />
-        <p className="text-white font-semibold mb-1">No driver assigned</p>
+        <p className="text-white font-semibold mb-1">No responder assigned</p>
         <p className="text-slate-500 text-xs mb-4">Assign a driver to this job before sending.</p>
         <button onClick={onClose} className="btn-primary w-full">Close</button>
       </div>
@@ -115,7 +115,7 @@ function DriverSyncModal({ job, onClose }) {
           </div>
           <div>
             <div className="text-white text-sm font-medium">{job.driver_name || 'Driver'}</div>
-            <div className="text-slate-500 text-2xs">{job.vehicle_reg || 'No vehicle'}</div>
+            <div className="text-slate-500 text-2xs">{job.vehicle_reg || 'No case assigned'}</div>
           </div>
           <div className="ml-auto">
             <span className={`text-2xs px-2 py-0.5 rounded border font-semibold uppercase ${
@@ -197,7 +197,7 @@ function DriverSyncModal({ job, onClose }) {
                     <img src={qr.url} alt="Sync QR Code" width={200} height={200} className="rounded-lg" />
                   </div>
                   <p className="text-slate-600 text-2xs text-center">
-                    Scan with phone camera · Opens in AP3X driver app
+                    Scan with phone camera · Opens in TrustSheild Response PWA
                   </p>
                   <a href={qr.link} className="text-cyan-400 text-2xs underline break-all text-center max-w-full"
                      target="_blank" rel="noreferrer">Open link</a>
@@ -218,7 +218,7 @@ function DriverSyncModal({ job, onClose }) {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   type="email"
-                  placeholder="driver@fleet.io"
+                  placeholder="responder@organisation.com"
                   className="w-full bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-700 outline-none focus:border-cyan-500/40"
                 />
               </div>
@@ -329,7 +329,7 @@ function JobCard({ job, onAssign, onIntel, onCancel, onComplete, onSync }) {
         </div>
         <div className="flex items-center gap-1.5">
           <Icon name="Truck" size={11} className="text-slate-600 flex-shrink-0" />
-          <span className="truncate">{job.vehicle_reg || 'No vehicle'}</span>
+          <span className="truncate">{job.vehicle_reg || 'No case assigned'}</span>
         </div>
         {job.scheduled_at && (
           <div className="flex items-center gap-1.5">
@@ -425,9 +425,9 @@ function AssignModal({ job, drivers, vehicles, onClose, onSaved }) {
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400">Vehicle</label>
+            <label className="text-xs text-slate-400">Linked Case</label>
             <select value={vehicleId} onChange={e => setVehicleId(e.target.value)} className="apex-input w-full">
-              <option value="">Select vehicle…</option>
+              <option value="">Select case…</option>
               {vehicles.map(v => <option key={v.id} value={v.id}>{v.reg_number} — {v.make}</option>)}
             </select>
           </div>
@@ -460,7 +460,7 @@ function AssignModal({ job, drivers, vehicles, onClose, onSaved }) {
                   </div>
                   <div className="text-center">
                     <div className={`text-sm font-bold font-mono ${vSafety.overallRisk <= 20 ? 'text-emerald-400' : vSafety.overallRisk <= 50 ? 'text-amber-400' : 'text-red-400'}`}>{100 - vSafety.overallRisk}</div>
-                    <div className="text-2xs text-slate-600">Vehicle OK</div>
+                    <div className="text-2xs text-slate-600">Case OK</div>
                   </div>
                   <div className="text-center">
                     <div className={`text-sm font-bold font-mono ${dRisk.safetyScore >= 70 ? 'text-emerald-400' : dRisk.safetyScore >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{dRisk.safetyScore}</div>
@@ -669,7 +669,7 @@ function JobModal({ onClose, onSaved, vehicles, drivers }) {
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800/50 flex-shrink-0">
           <div>
             <h2 className="font-semibold text-white">New Dispatch Job</h2>
-            <p className="text-2xs text-slate-600 mt-0.5">Route planner · Vehicle-profile aware · Syncs to driver app</p>
+            <p className="text-2xs text-slate-600 mt-0.5">Response planner · Case-aware · Syncs to Response PWA</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors">
             <Icon name="X" size={15} />
@@ -723,7 +723,7 @@ function JobModal({ onClose, onSaved, vehicles, drivers }) {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-400 font-medium">Assign Vehicle</label>
+              <label className="text-xs text-slate-400 font-medium">Assign Case</label>
               <select className="apex-input w-full" value={form.vehicle_id} onChange={e => set('vehicle_id', e.target.value)}>
                 <option value="">— None —</option>
                 {vehicles.map(v => <option key={v.id} value={v.id}>{v.reg_number} {v.make} {v.model ? `· ${v.model}` : ''}</option>)}

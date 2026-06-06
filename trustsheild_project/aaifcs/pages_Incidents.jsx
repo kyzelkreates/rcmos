@@ -120,7 +120,7 @@ function IncidentModal({ initial, onClose, onSaved }) {
               <input value={form.driver_name} onChange={e => set('driver_name', e.target.value)} className="apex-input" placeholder="Driver name" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-400 font-medium">Vehicle Reg</label>
+              <label className="text-xs text-slate-400 font-medium">Case Ref</label>
               <input value={form.vehicle_reg} onChange={e => set('vehicle_reg', e.target.value)} className="apex-input" placeholder="e.g. AB12 CDE" />
             </div>
           </div>

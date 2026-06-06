@@ -54,7 +54,7 @@ function VehiclePanel({ vehicle, onClose, onFocus }) {
             <StatusDot status={statusDot} />
             <div>
               <div className="font-mono font-bold text-cyan-400 text-sm">{vehicle.label}</div>
-              <div className="text-xs text-slate-500">{vehicle.sublabel || 'No driver assigned'}</div>
+              <div className="text-xs text-slate-500">{vehicle.sublabel || 'No responder assigned'}</div>
             </div>
           </div>
           <button onClick={onClose} className="p-1 text-slate-600 hover:text-slate-400 transition-colors">
@@ -95,7 +95,7 @@ function FleetSidebar({ vehicles, activeId, onSelect, isLoading }) {
     <div className="absolute top-4 left-4 z-[999] w-60 pointer-events-auto">
       <div className="bg-[#0d1426]/97 border border-slate-700/50 rounded-xl overflow-hidden backdrop-blur-sm shadow-2xl">
         <div className="px-3 py-2.5 border-b border-slate-800/60 flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-200">Live Fleet</span>
+          <span className="text-xs font-semibold text-slate-200">Live Cases</span>
           <div className="flex items-center gap-1.5">
             {isLoading
               ? <Icon name="Loader2" size={11} className="text-slate-600 animate-spin" />
@@ -114,7 +114,7 @@ function FleetSidebar({ vehicles, activeId, onSelect, isLoading }) {
         <div className="max-h-64 overflow-y-auto scrollbar-none">
           {filtered.length === 0 && (
             <div className="px-3 py-5 text-xs text-slate-700 text-center">
-              {vehicles.length === 0 ? 'No vehicles in fleet' : 'No results'}
+              {vehicles.length === 0 ? 'No active cases' : 'No results'}
             </div>
           )}
           {filtered.map(v => {
@@ -280,10 +280,10 @@ function CreateJobModal({ routeData, drivers, vehicles, onClose, onCreated }) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">Vehicle</label>
+            <label className="text-xs text-slate-400 font-medium">Case</label>
             <select value={vehicleId} onChange={e => setVehicleId(e.target.value)}
               className="w-full bg-slate-900/70 border border-slate-800/60 rounded-lg text-xs text-slate-300 px-3 py-2 outline-none focus:border-cyan-500/40">
-              <option value="">Select vehicle…</option>
+              <option value="">Select case…</option>
               {vehicles.map(v => <option key={v.id} value={v.id}>{v.reg_number} — {v.make || ''}</option>)}
             </select>
           </div>

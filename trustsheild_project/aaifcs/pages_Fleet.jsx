@@ -72,14 +72,14 @@ export default function Fleet() {
       <div className="px-6 py-4 border-b border-slate-800/60 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="font-display text-xl font-bold text-white">Fleet Control</h1>
+            <h1 className="font-display text-xl font-bold text-white">Crisis Command</h1>
             <p className="text-slate-500 text-xs mt-0.5">
-              {vehicles.length} vehicles registered
+              {vehicles.length} cases registered
             </p>
           </div>
           <button onClick={() => setModal('create')} className="btn-primary text-sm px-4 py-2">
             <Icon name="Plus" size={14} />
-            Add Vehicle
+            Add Case
           </button>
         </div>
 
@@ -114,7 +114,7 @@ export default function Fleet() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search vehicles..."
+            placeholder="Search cases..."
             className="apex-input pl-8 py-2 text-xs"
           />
         </div>
@@ -175,7 +175,7 @@ export default function Fleet() {
             {filtered.length === 0 && (
               <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-600">
                 <Icon name="Truck" size={40} className="mb-4 opacity-20" />
-                <p className="text-sm">No vehicles match your filters</p>
+                <p className="text-sm">No cases match your filters</p>
               </div>
             )}
           </div>

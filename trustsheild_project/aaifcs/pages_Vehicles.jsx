@@ -46,11 +46,11 @@ function VehicleProfile({ vehicle, onEdit }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
-          ['VIN',           vehicle.vin       || '—'],
+          ['Ref ID',           vehicle.ref_id || vehicle.vin       || '—'],
           ['Type',          vehicle.type?.toUpperCase() || '—'],
-          ['Fuel Type',     vehicle.fuel_type || '—'],
-          ['Odometer',      vehicle.odometer_km ? `${vehicle.odometer_km.toLocaleString()} km` : '—'],
-          ['Driver',        vehicle.driver_name || 'Unassigned'],
+          ['Category',      vehicle.fuel_type || '—'],
+          ['Priority',      vehicle.odometer_km ? `${vehicle.odometer_km.toLocaleString()} pts` : '—'],
+          ['Assigned To',   vehicle.driver_name || 'Unassigned'],
           ['Last Service',  vehicle.last_service ? formatDate(vehicle.last_service) : '—'],
         ].map(([l, v]) => (
           <div key={l} className="bg-slate-900/40 border border-slate-800/40 rounded-lg p-3">
@@ -116,7 +116,7 @@ function TelemetryCard({ vehicle }) {
         <TelemetryValue label="Lng"    value={live.lng != null ? live.lng.toFixed(4) : '—'} size="md" />
       </div>
       {vehicle.status !== VEHICLE_STATUS.ACTIVE && (
-        <p className="text-xs text-slate-600 text-center mt-3">Telemetry streaming when vehicle is active</p>
+        <p className="text-xs text-slate-600 text-center mt-3">Status streaming when case is active</p>
       )}
     </div>
   )
@@ -175,7 +175,7 @@ function VehicleBrowse({ vehicles, isLoading, onSelect }) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 border-b border-slate-800/60 flex-shrink-0">
-        <h1 className="font-display text-xl font-bold text-white mb-4">Vehicles</h1>
+        <h1 className="font-display text-xl font-bold text-white mb-4">Active Cases</h1>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
@@ -228,7 +228,7 @@ function VehicleBrowse({ vehicles, isLoading, onSelect }) {
             {filtered.length === 0 && (
               <div className="col-span-full flex flex-col items-center justify-center py-16 text-slate-600">
                 <Icon name="Truck" size={36} className="mb-3 opacity-20" />
-                <p className="text-sm">No vehicles found</p>
+                <p className="text-sm">No cases found</p>
               </div>
             )}
           </div>
