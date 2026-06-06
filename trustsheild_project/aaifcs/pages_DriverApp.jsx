@@ -37,10 +37,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Icon from './components_ui_Icon'
-import { usePwaStore, useTaskStore, useIdentityStore, useTrustStore, useConfigStore, useSyncStore } from './core_storage'
+import { usePwaStore, useTaskStore, useIdentityStore, useTrustStore, useConfigStore, useSyncStore, useAIAgentStore } from './core_storage'
 import { PWA_DEMO_DATA, TASK_SEED_DATA, IDENTITY_SEED_DATA } from './data_trustsheild_demo'
 import APP_CONFIG from './config_app'
 import { getSyncMode, SYNC_STATUS_LABELS, FRESHNESS_LABELS, timeAgo as syncTimeAgo, localDemoAdapter } from './services_trustsheild_sync'
+import { AGENT_DEFINITIONS, runAgent, buildAgentInput } from './services_trustsheild_ai_agents'
 
 // ─── Colour maps ──────────────────────────────────────────────
 const RISK_COLOR = {
@@ -280,6 +281,7 @@ const PWA_TABS = [
   { key: 'escalate',  label: 'Escalate', icon: 'AlertOctagon'},
   { key: 'identity',  label: 'Identity', icon: 'UserCircle'  },
   { key: 'sync',      label: 'Sync',     icon: 'Wifi'        },
+  { key: 'ai',        label: 'AI Guide',  icon: 'Brain'       },
 ]
 
 function BottomNav({ active, onTab, taskBadge }) {
@@ -1302,6 +1304,185 @@ function EscalationScreen({ addEscalation, pwaEscalations, pwaCase, isDemo, curr
 // ═══════════════════════════════════════════════════════════════
 // SCREEN 8 — Sync Status
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SCREEN — 4P3X Intelligent AI™ PWA Guidance (Run 10)
+// Advisory-only guidance for PWA responders.
+// ═══════════════════════════════════════════════════════════════
+function PwaAiGuidanceScreen({ pwaTasks, pwaCase, aiSettings, logAiOutput, logSafetyEvent, currentPwaId, isDemo }) {
+  const [running, setRunning] = useState(false)
+  const [guidance, setGuidance] = useState(null)
+  const [selectedTaskType, setSelectedTaskType] = useState('Submit Situation Update')
+  const [toast, setToast] = useState(null)
+
+  const aiEnabled = aiSettings?.enabled !== false
+  const aiMode = aiSettings?.mode || 'demo'
+
+  const taskTypes = [
+    'Submit Situation Update',
+    'Upload Evidence or Notes',
+    'Confirm Update Received',
+    'Log Customer or Social Issue',
+    'Request Escalation',
+  ]
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
+
+  const runGuidance = async () => {
+    if (!aiEnabled) { showToast('AI advisory support is disabled.'); return }
+    setRunning(true)
+    const input = {
+      taskType: selectedTaskType,
+      taskTitle: selectedTaskType,
+      instructions: pwaTasks?.[0]?.instructions || '',
+      caseTitle: pwaCase?.title || 'Active Case',
+      userRole: 'Responder',
+      escalationStatus: 'none',
+    }
+    const result = await runAgent('pwaGuidance', input, { aiEnabled, aiMode, logAiOutput, logSafetyEvent })
+    setGuidance(result)
+    setRunning(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      {toast && <SuccessToast message={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Header banner */}
+      <div className="flex items-start gap-3 p-4 rounded-xl"
+        style={{ background: 'rgba(143,92,255,0.07)', border: '1px solid rgba(143,92,255,0.2)' }}>
+        <Icon name="Brain" size={18} style={{ color: '#8f5cff', flexShrink: 0, marginTop: 1 }} />
+        <div>
+          <div className="text-sm font-bold" style={{ color: '#8f5cff' }}>4P3X Intelligent AI™ Task Guidance</div>
+          <p className="text-xs mt-1" style={{ color: '#a8adb7' }}>
+            AI guidance is advisory only. Do not submit public, legal, media, or stakeholder responses without responsible human review from the Command Dashboard.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-[10px] px-2 py-0.5 rounded font-bold"
+              style={aiEnabled ? { background: 'rgba(143,92,255,0.15)', color: '#8f5cff', border: '1px solid rgba(143,92,255,0.3)' } : { background: 'rgba(90,95,107,0.1)', color: '#5a5f6b', border: '1px solid rgba(90,95,107,0.2)' }}>
+              {aiEnabled ? 'Demo Advisory' : 'AI Disabled'}
+            </span>
+            <span className="text-[10px]" style={{ color: '#5a5f6b' }}>Advisory only · No final decisions</span>
+          </div>
+        </div>
+      </div>
+
+      {!aiEnabled ? (
+        <Card>
+          <div className="flex flex-col items-center py-8 gap-2">
+            <Icon name="BrainCircuit" size={24} style={{ color: '#3a3f4b' }} />
+            <p className="text-xs text-center" style={{ color: '#5a5f6b' }}>AI advisory support is disabled. Enable it in the Command Dashboard → AI Settings.</p>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {/* Task type selector */}
+          <Card>
+            <CardHeader icon="HelpCircle" iconColor="#8f5cff" title="PWA Guidance Agent" subtitle="Get advisory guidance for your current task" />
+            <div className="p-4 space-y-3">
+              <SelectInput
+                label="What are you working on?"
+                value={selectedTaskType}
+                onChange={setSelectedTaskType}
+                options={taskTypes.map(t => ({ value: t, label: t }))}
+              />
+              <TapButton onClick={runGuidance} variant="purple" fullWidth loading={running} disabled={running}>
+                <Icon name="Brain" size={14} />
+                {running ? 'Generating guidance…' : 'Get AI Advisory Guidance'}
+              </TapButton>
+            </div>
+          </Card>
+
+          {/* Guidance output */}
+          {guidance?.ok && guidance.output && (
+            <Card>
+              <CardHeader icon="Lightbulb" iconColor="#d6a84f" title="Advisory Guidance" subtitle="Demo advisory — human review required" />
+              <div className="p-4 space-y-3">
+                {/* Human review warning */}
+                <div className="flex items-center gap-2 p-2.5 rounded-xl"
+                  style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
+                  <Icon name="AlertTriangle" size={12} style={{ color: '#fbbf24', flexShrink: 0 }} />
+                  <span className="text-[10px] font-semibold" style={{ color: '#fbbf24' }}>
+                    Human Review Required — advisory only, not a final decision
+                  </span>
+                </div>
+
+                {/* Task explanation */}
+                <div className="p-3 rounded-xl" style={{ background: 'rgba(143,92,255,0.05)', border: '1px solid rgba(143,92,255,0.15)' }}>
+                  <div className="text-[10px] font-bold mb-1" style={{ color: '#8f5cff' }}>What to do</div>
+                  <p className="text-xs" style={{ color: '#c8ccd2' }}>{guidance.output.taskExplanation}</p>
+                </div>
+
+                {/* Suggested info */}
+                <div>
+                  <div className="text-[10px] font-bold mb-2" style={{ color: '#d6a84f' }}>Include in your update</div>
+                  {guidance.output.suggestedInfo?.map((s, i) => (
+                    <div key={i} className="flex items-start gap-2 mb-1.5">
+                      <Icon name="Check" size={11} style={{ color: '#37ff8b', flexShrink: 0, marginTop: 1 }} />
+                      <span className="text-xs" style={{ color: '#a8adb7' }}>{s}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Missing checklist */}
+                <div className="p-3 rounded-xl" style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.12)' }}>
+                  <div className="text-[10px] font-bold mb-1.5" style={{ color: '#fbbf24' }}>Quick checklist</div>
+                  {guidance.output.missingChecklist?.map((q, i) => (
+                    <div key={i} className="flex items-start gap-2 mb-1">
+                      <Icon name="Circle" size={8} style={{ color: '#fbbf24', flexShrink: 0, marginTop: 2 }} />
+                      <span className="text-[10px]" style={{ color: '#a8adb7' }}>{q}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Escalation reminder */}
+                <div className="flex items-start gap-2 p-2.5 rounded-xl"
+                  style={{ background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)' }}>
+                  <Icon name="AlertCircle" size={12} style={{ color: '#f87171', flexShrink: 0, marginTop: 1 }} />
+                  <p className="text-[10px]" style={{ color: '#f87171' }}>{guidance.output.escalationReminder}</p>
+                </div>
+
+                {/* Safety reminder */}
+                <p className="text-[10px]" style={{ color: '#5a5f6b' }}>{guidance.output.safetyReminder}</p>
+                <p className="text-[9px]" style={{ color: '#3a3f4b' }}>{guidance.output.confidence}</p>
+              </div>
+            </Card>
+          )}
+
+          {guidance?.blocked && (
+            <div className="flex items-start gap-3 p-4 rounded-xl"
+              style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)' }}>
+              <Icon name="ShieldX" size={14} style={{ color: '#f87171' }} />
+              <div>
+                <div className="text-sm font-bold" style={{ color: '#f87171' }}>Safety Filter Activated</div>
+                <p className="text-xs mt-1" style={{ color: '#c8ccd2' }}>{guidance.message}</p>
+                <p className="text-xs mt-1" style={{ color: '#37ff8b' }}>{guidance.alternative}</p>
+              </div>
+            </div>
+          )}
+
+          {!guidance && (
+            <Card>
+              <div className="flex flex-col items-center py-8 gap-2 px-4 text-center">
+                <Icon name="Brain" size={24} style={{ color: 'rgba(143,92,255,0.2)' }} />
+                <p className="text-xs" style={{ color: '#5a5f6b' }}>Select a task type above and tap Get AI Advisory Guidance.</p>
+                <p className="text-[10px]" style={{ color: '#3a3f4b' }}>No external AI required — demo advisory mode uses local rule-based logic.</p>
+              </div>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Advisory footer */}
+      <div className="flex items-start gap-2 p-3 rounded-xl"
+        style={{ background: 'rgba(143,92,255,0.04)', border: '1px solid rgba(143,92,255,0.12)' }}>
+        <Icon name="ShieldCheck" size={12} style={{ color: '#8f5cff', flexShrink: 0, marginTop: 1 }} />
+        <p className="text-[10px]" style={{ color: '#8f5cff' }}>{APP_CONFIG.aiAdvisory}</p>
+      </div>
+    </div>
+  )
+}
+
+
 function SyncScreen({ profile, isDemo, backendProvider, pendingQueue, syncEvents, logSyncEvent, enqueueSubmission, clearSentQueue, addFeedItem, currentPwaId, updateSyncStatus }) {
   const [submitting, setSubmitting] = useState(false)
   const [submissionType, setSubmissionType] = useState('situation_update')
@@ -1553,6 +1734,7 @@ export default function DriverApp() {
   const { mode: appMode } = useTrustStore()
   const isDemo = appMode !== 'live'
   const { backendConfig } = useConfigStore()
+  const { aiSettings, logAiOutput, logSafetyEvent } = useAIAgentStore()
   const backendProvider = backendConfig ? Object.entries(backendConfig).find(([,v]) => v?.status === 'saved_locally')?.[0] : null
   const { syncQueue, syncEvents, logSyncEvent, enqueueSubmission, updateSyncStatus, clearSentQueue } = useSyncStore()
   const { addFeedItem } = useTrustStore()
@@ -1583,6 +1765,7 @@ export default function DriverApp() {
       case 'drafts':   return <DraftsScreen pwaDraftReviews={pwaDraftReviews} updateDraftReview={updateDraftReview} isDemo={isDemo} currentPwaId={currentPwaId} logSyncEvent={logSyncEvent} addFeedItem={addFeedItem} />
       case 'escalate': return <EscalationScreen addEscalation={addEscalation} pwaEscalations={pwaEscalations} pwaCase={pwaCase} />
       case 'identity': return <IdentityScreen onTab={setActiveTab} />
+      case 'ai':       return <PwaAiGuidanceScreen pwaTasks={pwaTasks} pwaCase={pwaCase} aiSettings={aiSettings} logAiOutput={logAiOutput} logSafetyEvent={logSafetyEvent} currentPwaId={currentPwaId} isDemo={isDemo} />
       case 'sync':     return <SyncScreen profile={profile} isDemo={isDemo} backendProvider={backendProvider} pendingQueue={pendingQueue} syncEvents={syncEvents} logSyncEvent={logSyncEvent} enqueueSubmission={enqueueSubmission} updateSyncStatus={updateSyncStatus} clearSentQueue={clearSentQueue} addFeedItem={addFeedItem} currentPwaId={currentPwaId} />
       default:         return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
     }

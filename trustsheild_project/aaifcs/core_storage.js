@@ -109,6 +109,10 @@ export const STORAGE_KEYS = {
   TS_SYNC_EVENTS:      'trustsheild_sync_events',
   TS_LAST_SYNC:        'trustsheild_last_sync',
   TS_BACKEND_SYNC:     'trustsheild_backend_sync_state',
+  // ── TrustSheild OS™ AI Agent Keys (Run 10) ───────────────
+  TS_AI_AGENT_LOGS:    'trustsheild_ai_agent_logs',
+  TS_AI_SETTINGS:      'trustsheild_ai_settings',
+  TS_AI_SAFETY_EVENTS: 'trustsheild_ai_safety_events',
 
 }
 
@@ -1060,5 +1064,90 @@ export const useSyncStore = create((set, get) => ({
     const backendSyncState = { ...(get().backendSyncState || {}), ...state, testedAt: new Date().toISOString() }
     persist.set(STORAGE_KEYS.TS_BACKEND_SYNC, backendSyncState)
     set({ backendSyncState })
+  },
+}))
+
+// ─── TrustSheild OS™ AI Agent Store (Run 10) ─────────────────
+// 14th distinct Zustand store — additive only.
+// Manages AI agent settings, output logs, safety events.
+//
+// ⚠  SECURITY / ETHICS RULES:
+//   • Never store private AI API keys (OPENAI_API_KEY etc.) here.
+//   • All AI outputs are advisory only — advisoryOnly: true always.
+//   • humanReviewRequired: true always.
+//   • Safety filter blocks unethical reputation manipulation.
+//   • Demo AI mode works without any external API.
+//   • Aligns with Run 8 sql: ai_agent_logs table fields.
+//   • Compatible with Run 9 sync engine (logs marked syncable).
+// ============================================================
+export const useAIAgentStore = create((set, get) => ({
+
+  // ── AI Settings ───────────────────────────────────────────
+  aiSettings: persist.get(STORAGE_KEYS.TS_AI_SETTINGS, {
+    enabled:       true,           // AI advisory support on/off
+    mode:          'demo',         // 'demo' | 'provider-ready' | 'provider-connected'
+    providerName:  null,           // set when safe provider is configured
+    lastUpdated:   null,
+  }),
+
+  // ── AI Agent Advisory Logs (last 100) ─────────────────────
+  aiAgentLogs: persist.get(STORAGE_KEYS.TS_AI_AGENT_LOGS, []),
+
+  // ── AI Safety Events (last 50) ────────────────────────────
+  aiSafetyEvents: persist.get(STORAGE_KEYS.TS_AI_SAFETY_EVENTS, []),
+
+  // ── Toggle AI advisory support ────────────────────────────
+  setAiEnabled: (enabled) => {
+    const aiSettings = { ...(get().aiSettings || {}), enabled, lastUpdated: new Date().toISOString() }
+    persist.set(STORAGE_KEYS.TS_AI_SETTINGS, aiSettings)
+    set({ aiSettings })
+  },
+
+  // ── Set AI mode ───────────────────────────────────────────
+  setAiMode: (mode, providerName = null) => {
+    const aiSettings = { ...(get().aiSettings || {}), mode, providerName, lastUpdated: new Date().toISOString() }
+    persist.set(STORAGE_KEYS.TS_AI_SETTINGS, aiSettings)
+    set({ aiSettings })
+  },
+
+  // ── Log an AI agent advisory output ───────────────────────
+  // Aligns with Run 8 ai_agent_logs table schema.
+  logAiOutput: (entry) => {
+    const record = {
+      id:                   `ai-${Date.now()}`,
+      createdAt:            new Date().toISOString(),
+      advisoryOnly:         true,   // immutable — always true
+      humanReviewRequired:  true,   // immutable — always true
+      reviewStatus:         'new',  // new | reviewed | accepted | rejected | needs_review
+      synced:               false,  // marked true when backend sync is available
+      source:               'demo',
+      ...entry,
+    }
+    const aiAgentLogs = [record, ...(get().aiAgentLogs || [])].slice(0, 100)
+    persist.set(STORAGE_KEYS.TS_AI_AGENT_LOGS, aiAgentLogs)
+    set({ aiAgentLogs })
+    return record
+  },
+
+  // ── Update review status of a log entry ───────────────────
+  updateLogReview: (id, reviewStatus) => {
+    const aiAgentLogs = (get().aiAgentLogs || []).map(l =>
+      l.id === id ? { ...l, reviewStatus, reviewedAt: new Date().toISOString() } : l
+    )
+    persist.set(STORAGE_KEYS.TS_AI_AGENT_LOGS, aiAgentLogs)
+    set({ aiAgentLogs })
+  },
+
+  // ── Log a safety filter event ─────────────────────────────
+  logSafetyEvent: (event) => {
+    const record = {
+      id:        `safe-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      ...event,
+    }
+    const aiSafetyEvents = [record, ...(get().aiSafetyEvents || [])].slice(0, 50)
+    persist.set(STORAGE_KEYS.TS_AI_SAFETY_EVENTS, aiSafetyEvents)
+    set({ aiSafetyEvents })
+    return record
   },
 }))

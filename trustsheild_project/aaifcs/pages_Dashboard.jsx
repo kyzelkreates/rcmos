@@ -36,7 +36,8 @@ import TaskConfigPanel from './modules_tasks_TaskConfigPanel'
 import PwaIdentityManager from './modules_ap3x_DriverHUD'
 import ApiConfigPanel from './modules_ap3x_ApiConfigPanel'
 import SyncControlPanel from './modules_sync_SyncControlPanel'
-import { useTaskStore, useIdentityStore, useConfigStore, useSyncStore } from './core_storage'
+import AgentCentre from './modules_ai_AgentCentre'
+import { useTaskStore, useIdentityStore, useConfigStore, useSyncStore, useAIAgentStore } from './core_storage'
 import { TASK_SEED_DATA, IDENTITY_SEED_DATA, CONFIG_SEED_DATA } from './data_trustsheild_demo'
 
 // ─── Colour helpers ───────────────────────────────────────────
@@ -1326,6 +1327,7 @@ export default function Dashboard() {
   const { seedIdentities } = useIdentityStore()
   const { seedConfigData } = useConfigStore()
   const { syncStatus, syncQueue, updateSyncStatus } = useSyncStore()
+  const { aiSettings } = useAIAgentStore()
 
   // Seed demo data on first load
   useEffect(() => {
@@ -1481,8 +1483,8 @@ export default function Dashboard() {
       )}
 
       {activeTab === 'ai' && (
-        <SectionCard title="AI Agent Centre" icon="Brain" iconColor="#8f5cff" subtitle="Advisory placeholders — full AI integration in future runs">
-          <AIAgentSection isDemo={isDemo} />
+        <SectionCard title="4P3X Intelligent AI™ Agent Centre" icon="Brain" iconColor="#8f5cff" subtitle="Advisory-only AI agents — demo mode active, human review required">
+          <AgentCentre isDemo={isDemo} />
         </SectionCard>
       )}
 
