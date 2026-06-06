@@ -1,41 +1,93 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" role="img" aria-label="TrustSheild OS™ logo mark">
-  <!-- Background -->
-  <rect width="200" height="200" fill="#050505"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="TrustSheild OS™ — AI-Assisted Reputation Protection & Crisis Response Platform">
+  <!-- ================================================================
+       TrustSheild OS™ Logo
+       Powered by 4P3X Intelligent AI™  ·  Created by Kyzel Kreates™
+       Original SVG — no third-party assets, no copyrighted marks
+       ================================================================ -->
 
-  <!-- Outer ring glow -->
-  <circle cx="100" cy="100" r="92" stroke="rgba(214,168,79,0.15)" stroke-width="1"/>
-  <circle cx="100" cy="100" r="88" stroke="rgba(214,168,79,0.08)" stroke-width="0.5"/>
+  <!-- Background panel -->
+  <rect width="240" height="240" rx="28" fill="#07070A"/>
+
+  <!-- Outer glow ring -->
+  <circle cx="120" cy="110" r="96" stroke="rgba(214,168,79,0.10)" stroke-width="1"/>
+  <circle cx="120" cy="110" r="90" stroke="rgba(214,168,79,0.06)" stroke-width="0.5"/>
 
   <!-- Shield outer body -->
   <path
-    d="M100 20 L168 50 L168 105 C168 148 138 178 100 192 C62 178 32 148 32 105 L32 50 Z"
-    fill="rgba(214,168,79,0.06)"
-    stroke="rgba(214,168,79,0.7)"
+    d="M120 18 L192 52 L192 116 C192 162 162 192 120 208 C78 192 48 162 48 116 L48 52 Z"
+    fill="rgba(214,168,79,0.05)"
+    stroke="rgba(214,168,79,0.75)"
     stroke-width="2"
     stroke-linejoin="round"
   />
 
-  <!-- Shield inner panel -->
+  <!-- Shield inner highlight -->
   <path
-    d="M100 32 L156 58 L156 105 C156 142 130 168 100 180 C70 168 44 142 44 105 L44 58 Z"
-    fill="rgba(143,92,255,0.06)"
-    stroke="rgba(143,92,255,0.4)"
+    d="M120 30 L180 60 L180 116 C180 156 154 182 120 196 C86 182 60 156 60 116 L60 60 Z"
+    fill="rgba(143,92,255,0.05)"
+    stroke="rgba(143,92,255,0.35)"
     stroke-width="1.2"
     stroke-linejoin="round"
   />
 
-  <!-- Horizontal line accents -->
-  <line x1="56" y1="88" x2="144" y2="88" stroke="rgba(214,168,79,0.2)" stroke-width="0.8"/>
-  <line x1="52" y1="108" x2="148" y2="108" stroke="rgba(214,168,79,0.15)" stroke-width="0.6"/>
+  <!-- Horizontal scan lines inside shield -->
+  <line x1="68" y1="94"  x2="172" y2="94"  stroke="rgba(214,168,79,0.18)" stroke-width="0.8"/>
+  <line x1="64" y1="118" x2="176" y2="118" stroke="rgba(214,168,79,0.12)" stroke-width="0.6"/>
+  <line x1="70" y1="142" x2="170" y2="142" stroke="rgba(214,168,79,0.08)" stroke-width="0.5"/>
 
-  <!-- Centre AI node -->
-  <circle cx="100" cy="100" r="16" fill="rgba(55,255,139,0.1)" stroke="rgba(55,255,139,0.4)" stroke-width="1.2"/>
-  <circle cx="100" cy="100" r="9"  fill="rgba(55,255,139,0.8)"/>
-  <circle cx="100" cy="100" r="4"  fill="#050505"/>
+  <!-- Vertical accent line -->
+  <line x1="120" y1="52" x2="120" y2="88" stroke="rgba(214,168,79,0.25)" stroke-width="0.8"/>
 
-  <!-- Corner tick marks -->
-  <line x1="60" y1="62" x2="70" y2="62" stroke="rgba(214,168,79,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-  <line x1="60" y1="62" x2="60" y2="72" stroke="rgba(214,168,79,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-  <line x1="140" y1="62" x2="130" y2="62" stroke="rgba(214,168,79,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-  <line x1="140" y1="62" x2="140" y2="72" stroke="rgba(214,168,79,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- AI node — green pulse core -->
+  <circle cx="120" cy="110" r="22" fill="rgba(55,255,139,0.07)" stroke="rgba(55,255,139,0.3)" stroke-width="1.2"/>
+  <circle cx="120" cy="110" r="13" fill="rgba(55,255,139,0.12)" stroke="rgba(55,255,139,0.5)" stroke-width="1"/>
+  <circle cx="120" cy="110" r="6"  fill="#37ff8b"/>
+  <circle cx="120" cy="110" r="2.5" fill="#050505"/>
+
+  <!-- Corner bracket ticks — top left -->
+  <line x1="70" y1="70" x2="82" y2="70" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="70" y1="70" x2="70" y2="82" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Corner bracket ticks — top right -->
+  <line x1="170" y1="70" x2="158" y2="70" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="170" y1="70" x2="170" y2="82" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- AI connection dots — left + right of node -->
+  <circle cx="90"  cy="110" r="2" fill="rgba(143,92,255,0.6)"/>
+  <circle cx="150" cy="110" r="2" fill="rgba(143,92,255,0.6)"/>
+  <line x1="92" y1="110" x2="107" y2="110" stroke="rgba(143,92,255,0.25)" stroke-width="0.8" stroke-dasharray="2 2"/>
+  <line x1="133" y1="110" x2="148" y2="110" stroke="rgba(143,92,255,0.25)" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+  <!-- Text: TrustSheild OS™ -->
+  <text
+    x="120" y="182"
+    text-anchor="middle"
+    font-family="'Space Grotesk', 'Inter', system-ui, sans-serif"
+    font-size="13.5"
+    font-weight="700"
+    letter-spacing="0.04em"
+    fill="#D6A84F"
+  >TrustSheild OS™</text>
+
+  <!-- Powered by line -->
+  <text
+    x="120" y="196"
+    text-anchor="middle"
+    font-family="'Inter', system-ui, sans-serif"
+    font-size="7"
+    font-weight="400"
+    letter-spacing="0.08em"
+    fill="rgba(200,204,210,0.45)"
+  >Powered by 4P3X Intelligent AI™</text>
+
+  <!-- Created by line -->
+  <text
+    x="120" y="208"
+    text-anchor="middle"
+    font-family="'Inter', system-ui, sans-serif"
+    font-size="7"
+    font-weight="400"
+    letter-spacing="0.06em"
+    fill="rgba(143,92,255,0.5)"
+  >Created by Kyzel Kreates™</text>
 </svg>

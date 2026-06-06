@@ -18,6 +18,7 @@ import Setup         from './pages_auth_Setup'
 import DriverImport  from './pages_DriverImport'
 import DriverSetup  from './pages_DriverSetup'
 import DriverApp    from './pages_DriverApp'
+import Landing      from './pages_Landing'
 
 // App Pages
 import Dashboard   from './pages_Dashboard'
@@ -50,6 +51,9 @@ const LoginOrSetup = ({ element }) =>
   !setupDone() ? <Navigate to="/auth/setup" replace /> : element
 
 export const router = createHashRouter([
+
+  // ── Public landing/intro page ────────────────────────────
+  { path: '/welcome',            element: <Landing /> },
 
   // ── First-run Setup (public, before any account exists) ───
   { path: '/auth/setup',         element: <Setup /> },

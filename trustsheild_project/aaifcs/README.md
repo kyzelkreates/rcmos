@@ -196,3 +196,48 @@ Monitored entities must be owned brands, authorised clients, or public informati
 - **Offline queue** stores pending PWA submissions locally until sync is available (`trustsheild_sync_queue`).
 - **Data freshness warnings** are shown when backend is not connected or queue is pending.
 - Sync aligns with: `sql_7_trustsheild_supabase_setup.sql.txt`
+
+---
+
+## TrustSheild OS™ Branding + PWA Notes (Run 11)
+
+### Product Name Spelling Lock
+**TrustSheild OS™** — note the 'ei' spelling. Do NOT auto-correct to TrustShield.
+
+### Branding Line
+```
+Powered by 4P3X Intelligent AI™  ·  Created by Kyzel Kreates™
+```
+Use the `globalBrand` constant from `config_app.js` wherever the branding line appears.
+
+### Colour Tokens (CSS variables in `styles_globals.css`)
+| Token            | Value                    |
+|------------------|--------------------------|
+| `--bg-main`      | `#050505`                |
+| `--metal-gold`   | `#d6a84f`                |
+| `--metal-silver` | `#c8ccd2`                |
+| `--ai-green`     | `#37ff8b`                |
+| `--ai-purple`    | `#8f5cff`                |
+| `--text-main`    | `#f5f5f2`                |
+
+### PWA Start URL Rule
+- The installed PWA **must** open `/#/driver-app` (the TrustSheild Response PWA).
+- Do NOT change `start_url` away from `/#/driver-app`.
+- The Command Dashboard is at `/#/dashboard`.
+
+### Logo Assets
+- `public/trustsheild-logo.svg` — full logo with text
+- `public/trustsheild-icon.svg` — compact icon for favicon/PWA
+- PNG icons: `public/icons/icon-192x192.png` + `public/icons/icon-512x512.png`
+  (replace with generated PNGs from the SVG for production)
+
+### Welcome / Landing Page
+- Route: `/#/welcome` (public — no auth required)
+- Investor/demo-ready explainer
+
+### Demo Mode vs Live Mode
+- **Demo Mode** — shows the product with realistic sample data. No backend required.
+- **Live Mode** — requires backend provider (Supabase/Firebase/REST) configured in Backend tab.
+
+### Run 12
+Final run handles: QA, cross-browser testing, console clean-up, ZIP export, GitHub push, production handoff notes.

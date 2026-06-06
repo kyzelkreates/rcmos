@@ -27,10 +27,12 @@ function Breadcrumb({ pathname }) {
   )
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="text-2xs font-medium tracking-widest uppercase hidden sm:inline"
-            style={{ color: 'rgba(214,168,79,0.5)' }}>
+      <button onClick={() => navigate('/welcome')}
+              className="text-2xs font-medium tracking-widest uppercase hidden sm:inline transition-opacity hover:opacity-80"
+              style={{ color: 'rgba(214,168,79,0.5)', background: 'none', border: 'none', cursor: 'pointer' }}
+              aria-label="Go to TrustSheild OS™ welcome page">
         TrustSheild OS™
-      </span>
+      </button>
       <Icon name="ChevronRight" size={13} className="hidden sm:inline" style={{ color: 'rgba(214,168,79,0.25)' }} />
       <span className="font-medium" style={{ color: '#f5f5f2' }}>
         {item?.label || 'Trust Overview'}
@@ -140,7 +142,7 @@ function UserMenu({ user, roleLabel, signOut }) {
                   border: '1px solid rgba(214,168,79,0.25)',
                 }}
               >
-                {roleLabel || 'TrustSheild Controller'}
+                {roleLabel || 'Command Centre'}
               </span>
             </div>
 

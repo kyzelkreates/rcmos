@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none" role="img" aria-label="TrustSheild OS™ icon">
+  <!-- TrustSheild OS™ PWA Icon — original SVG, no third-party assets -->
+  <rect width="192" height="192" rx="38" fill="#07070A"/>
+  <circle cx="96" cy="94" r="80" stroke="rgba(214,168,79,0.08)" stroke-width="1"/>
+  <path
+    d="M96 16 L162 46 L162 98 C162 138 134 164 96 178 C58 164 30 138 30 98 L30 46 Z"
+    fill="rgba(214,168,79,0.06)"
+    stroke="rgba(214,168,79,0.75)"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M96 28 L150 54 L150 98 C150 132 126 154 96 166 C66 154 42 132 42 98 L42 54 Z"
+    fill="rgba(143,92,255,0.05)"
+    stroke="rgba(143,92,255,0.3)"
+    stroke-width="1.2"
+    stroke-linejoin="round"
+  />
+  <line x1="52" y1="80"  x2="140" y2="80"  stroke="rgba(214,168,79,0.18)" stroke-width="0.8"/>
+  <line x1="48" y1="100" x2="144" y2="100" stroke="rgba(214,168,79,0.12)" stroke-width="0.6"/>
+  <circle cx="96" cy="96" r="20" fill="rgba(55,255,139,0.08)" stroke="rgba(55,255,139,0.35)" stroke-width="1.2"/>
+  <circle cx="96" cy="96" r="11" fill="rgba(55,255,139,0.15)" stroke="rgba(55,255,139,0.55)" stroke-width="1"/>
+  <circle cx="96" cy="96" r="5.5" fill="#37ff8b"/>
+  <circle cx="96" cy="96" r="2.2" fill="#07070A"/>
+  <line x1="56" y1="54" x2="66" y2="54" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="56" y1="54" x2="56" y2="64" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="136" y1="54" x2="126" y2="54" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="136" y1="54" x2="136" y2="64" stroke="rgba(214,168,79,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+  <text
+    x="96" y="162"
+    text-anchor="middle"
+    font-family="'Space Grotesk','Inter',system-ui,sans-serif"
+    font-size="12"
+    font-weight="700"
+    letter-spacing="0.02em"
+    fill="#D6A84F"
+  >TS™</text>
+</svg>

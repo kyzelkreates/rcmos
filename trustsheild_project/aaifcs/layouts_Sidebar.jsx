@@ -200,6 +200,11 @@ function SidebarFooter() {
         Demo Mode
       </div>
 
+      <a href="#/welcome" className="block text-[10px] mb-2 hover:opacity-80 transition-opacity"
+        style={{ color: 'rgba(214,168,79,0.4)' }}
+        aria-label="View TrustSheild OS™ welcome page">
+        Powered by 4P3X Intelligent AI™ · Kyzel Kreates™
+      </a>
       <div className="flex items-center gap-2">
         <StatusDot status="online" />
         <span className="text-2xs" style={{ color: '#5a5f6b' }}>Systems Nominal</span>

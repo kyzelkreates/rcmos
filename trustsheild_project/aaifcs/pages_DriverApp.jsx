@@ -1830,6 +1830,11 @@ export default function DriverApp() {
         {renderScreen()}
       </main>
 
+      {/* ── Branding micro-footer (above bottom nav) ─────────── */}
+      <div className="text-center pb-1 px-4" style={{ color: 'rgba(214,168,79,0.18)', fontSize: '8px', letterSpacing: '0.06em' }}>
+        Powered by 4P3X Intelligent AI™ · Created by Kyzel Kreates™
+      </div>
+
       {/* ── Bottom navigation ─────────────────────────────────── */}
       <BottomNav active={activeTab} onTab={setActiveTab} taskBadge={pendingTasks} />
     </div>

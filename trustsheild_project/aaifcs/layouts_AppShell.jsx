@@ -23,9 +23,12 @@ export default function AppShell() {
   const closeSidebar    = useAppStore(s => s.closeSidebar  || (() => s.sidebarExpanded && s.toggleSidebar?.()))
   const location        = useLocation()
 
-  // Close drawer on route change
+  // Close drawer + scroll to top on route change
   useEffect(() => {
     useAppStore.getState().closeSidebar?.()
+    // Scroll main content to top on navigation
+    const main = document.getElementById('ts-main-content')
+    if (main) main.scrollTop = 0
   }, [location.pathname])
 
   return (
@@ -56,7 +59,7 @@ export default function AppShell() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopNav />
         <BackendWarningBanner />
-        <main className="flex-1 overflow-auto scrollbar-none">
+        <main id="ts-main-content" className="flex-1 overflow-auto scrollbar-none">
           <Outlet />
         </main>
       </div>

@@ -207,7 +207,7 @@ const TABS = [
   { key: 'command',     label: 'Crisis Command',     icon: 'Zap' },
   { key: 'feed',        label: 'Live Feed',          icon: 'Radio' },
   { key: 'responders',  label: 'PWA Identities',     icon: 'Users' },
-  { key: 'tasks',       label: 'Tasks (Legacy)',      icon: 'CheckSquare' },
+  { key: 'tasks',       label: 'Legacy Tasks',      icon: 'CheckSquare' },
   { key: 'taskconfig', label: 'PWA Task Config',    icon: 'Settings'    },
   { key: 'evidence',    label: 'Evidence',           icon: 'FolderOpen' },
   { key: 'drafts',      label: 'Drafts',             icon: 'FileEdit' },
@@ -1489,10 +1489,16 @@ export default function Dashboard() {
       )}
 
       {/* ── Global footer branding ──────────────────────────── */}
-      <div className="pt-4 pb-2 text-center" style={{ borderTop: '1px solid rgba(214,168,79,0.06)' }}>
-        <span className="text-[10px]" style={{ color: 'rgba(214,168,79,0.25)', letterSpacing: '0.05em' }}>
-          {APP_CONFIG.globalBrand}
-        </span>
+      <div className="pt-4 pb-2 text-center space-y-1" style={{ borderTop: '1px solid rgba(214,168,79,0.06)' }}>
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-[10px]" style={{ color: 'rgba(214,168,79,0.25)', letterSpacing: '0.05em' }}>
+            {APP_CONFIG.globalBrand}
+          </span>
+        </div>
+        <a href="#/welcome" className="text-[9px] hover:opacity-80 transition-opacity"
+          style={{ color: 'rgba(214,168,79,0.18)' }} aria-label="View TrustSheild OS™ welcome page">
+          TrustSheild OS™ — Demo Mode Active
+        </a>
       </div>
     </div>
   )

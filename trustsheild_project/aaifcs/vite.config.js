@@ -29,7 +29,7 @@ export default defineConfig({
       // ── Web App Manifest — TrustSheild OS™ identity ────────
       manifest: {
         name:             'TrustSheild OS™',
-        short_name:       'TrustSheild',
+        short_name:       'TrustSheild OS',
         description:      'AI-Assisted Reputation Protection & Crisis Response Platform. Powered by 4P3X Intelligent AI™. Created by Kyzel Kreates™.',
         theme_color:      '#050505',
         background_color: '#050505',
@@ -40,6 +40,12 @@ export default defineConfig({
         start_url:        '/#/driver-app',
         categories:       ['business', 'productivity', 'utilities'],
         icons: [
+          {
+            src:     'trustsheild-icon.svg',
+            sizes:   'any',
+            type:    'image/svg+xml',
+            purpose: 'any',
+          },
           {
             src:     'icons/icon-192x192.png',
             sizes:   '192x192',
@@ -56,7 +62,7 @@ export default defineConfig({
         shortcuts: [
           {
             // NOTE: name/url preserved for PWA install compatibility — Run 5 will update
-            name:        'Response PWA',
+            name:        'TrustSheild Response PWA',
             short_name:  'Response',
             url:         '/#/driver-app',
             description: 'Open the TrustSheild Response PWA',
