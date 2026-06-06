@@ -376,7 +376,7 @@ function PwaLiveReady({ message }) {
   )
 }
 
-function HomeScreen({ profile, pwaCase, pwaTasks, onTab, isDemo }) {
+function HomeScreen({ profile, pwaCase, pwaTasks, onTab, isDemo, backendProvider }) {
   const pendingCount = pwaTasks?.filter(t => t.status === 'New' || t.status === 'In Progress' || t.status === 'Needs Review').length ?? 0
   const riskStyle = RISK_COLOR[pwaCase?.riskLevel] || RISK_COLOR.Low
   const now = new Date()
@@ -1751,13 +1751,13 @@ export default function DriverApp() {
   // Badge count from both stores — configTasks are dashboard-assigned tasks for pwa-001 (demo)
   const { configTasks: _cfgT } = useTaskStore()
   const dashTasksPending = (_cfgT || []).filter(t => t.assignedPwaId === 'pwa-001' && ['New','Sent to PWA','In Progress','Needs Review'].includes(t.status)).length
-  const legacyPending    = pwaTasks?.filter(t => ['New','In Progress','Needs Review'].includes(t.status)).length ?? 0
+  const legacyPending    = (pwaTasks || []).filter(t => ['New','In Progress','Needs Review'].includes(t.status)).length
   const pendingTasks     = dashTasksPending + legacyPending
 
   // Screen renderer
   const renderScreen = () => {
     switch (activeTab) {
-      case 'home':     return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} isDemo={isDemo} />
+      case 'home':     return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} isDemo={isDemo} backendProvider={backendProvider} />
       case 'case':     return <CrisisBriefScreen pwaCase={pwaCase} onTab={setActiveTab} isDemo={isDemo} />
       case 'tasks':    return <TasksScreen pwaTasks={pwaTasks} updateTask={updatePwaTask} onTab={setActiveTab} activePwaId={currentPwaId} isDemo={isDemo} />
       case 'update':   return <UpdateScreen addPwaUpdate={addPwaUpdate} pwaUpdates={pwaUpdates} pwaCase={pwaCase} />
@@ -1767,7 +1767,7 @@ export default function DriverApp() {
       case 'identity': return <IdentityScreen onTab={setActiveTab} />
       case 'ai':       return <PwaAiGuidanceScreen pwaTasks={pwaTasks} pwaCase={pwaCase} aiSettings={aiSettings} logAiOutput={logAiOutput} logSafetyEvent={logSafetyEvent} currentPwaId={currentPwaId} isDemo={isDemo} />
       case 'sync':     return <SyncScreen profile={profile} isDemo={isDemo} backendProvider={backendProvider} pendingQueue={pendingQueue} syncEvents={syncEvents} logSyncEvent={logSyncEvent} enqueueSubmission={enqueueSubmission} updateSyncStatus={updateSyncStatus} clearSentQueue={clearSentQueue} addFeedItem={addFeedItem} currentPwaId={currentPwaId} />
-      default:         return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
+      default:         return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} isDemo={isDemo} backendProvider={backendProvider} />
     }
   }
 
