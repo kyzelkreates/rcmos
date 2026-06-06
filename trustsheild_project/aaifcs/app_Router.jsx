@@ -41,10 +41,9 @@ import AIPage      from './pages_AI'
 const setupDone = () => localStorage.getItem('apex:setup_complete') === 'true'
 
 // Root redirects: first-run → setup, otherwise → dashboard
-const RootRedirect = () =>
-  setupDone()
-    ? <Navigate to="/dashboard" replace />
-    : <Navigate to="/auth/setup" replace />
+// Root redirect: always show homepage first
+// From homepage, CTAs navigate to dashboard or auth/setup
+const RootRedirect = () => <Navigate to="/welcome" replace />
 
 // Login redirect: if setup not done, go to setup first
 const LoginOrSetup = ({ element }) =>
