@@ -141,3 +141,45 @@ File naming convention: `type_module_Component.jsx` or `type_module.js`
 ---
 
 *TrustSheild OS™ is created by Kyzel Kreates™. Powered by 4P3X Intelligent AI™.*
+
+---
+
+## TrustSheild OS™ Supabase Setup (Run 8)
+
+### SQL File Location
+
+```
+sql_7_trustsheild_supabase_setup.sql.txt
+```
+
+Located in the project root alongside the other `sql_*.txt` files.
+
+### How to Run
+
+1. Open your Supabase project dashboard.
+2. Go to **SQL Editor**.
+3. Open `sql_7_trustsheild_supabase_setup.sql.txt`.
+4. Run **each section in order** (Extensions → Functions → Tables → Indexes → Triggers → RLS → Policies → Verification).
+5. Run the **Verification Queries** (Section 9) to confirm the schema is correct.
+6. Do NOT run the rollback section unless explicitly reverting.
+
+### Important Security Notes
+
+- **RLS is ENABLED** on all 23 user-facing tables.
+- All policies use `user_has_org_access()` — authenticated users only see records belonging to their organisation.
+- **NEVER** place `SUPABASE_SERVICE_ROLE_KEY` in the frontend.
+- Use only the public **anon key** in the frontend, **after** verifying RLS policies are correctly configured.
+- No anonymous full-access policies exist. No broad "allow all" policies exist.
+
+### Tables Created (23)
+
+`organisations` · `profiles` · `tracked_entities` · `reputation_cases` · `crisis_incidents` · `pwa_identities` · `pwa_pairing_sessions` · `pwa_tasks` · `pwa_task_updates` · `live_update_feed` · `evidence_items` · `response_drafts` · `response_draft_reviews` · `stakeholder_updates` · `escalation_requests` · `backend_provider_configs` · `api_provider_configs` · `entity_provider_map` · `api_test_results` · `sync_events` · `ai_agent_logs` · `reports` · `audit_logs`
+
+### Run Status
+
+- **Run 8** — SQL file created. No live backend connection yet.
+- **Run 9** — Will wire Supabase client + dashboard ↔ PWA sync engine.
+
+### Ethical Notice
+
+Monitored entities must be owned brands, authorised clients, or public information sources only. No private surveillance, harassment, doxxing, or unauthorised tracking. AI guidance is advisory and must be reviewed by a responsible human before action.

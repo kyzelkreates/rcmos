@@ -20,7 +20,7 @@ export const APP_CONFIG = {
   name:        'TrustSheild OS™',
   shortName:   'TrustSheild',
   version:     '1.0.0',
-  buildStage:  'Run 7 — Backend + API Config Panel / Save + Test Layer',
+  buildStage:  'Run 8 — Full Supabase SQL Setup File',
 
   // Branding lines used globally across UI
   brandLine:   'Powered by 4P3X Intelligent AI™',
