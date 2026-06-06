@@ -662,8 +662,6 @@ export const DEMO_DATA = {
   feedItems: DEMO_FEED,
 }
 
-export default DEMO_DATA
-
 // ============================================================
 // TrustSheild Response PWA — Demo Data (Run 3)
 // ============================================================
@@ -1130,8 +1128,6 @@ export const TASK_SEED_DATA = {
   taskActivity: SEED_TASK_ACTIVITY,
   pwaContacts:  DEMO_PWA_CONTACTS,
 }
-
-export { TASK_TEMPLATES }
 
 // ============================================================
 // TrustSheild OS™ — PWA Identity & Pairing Seed (Run 5)
