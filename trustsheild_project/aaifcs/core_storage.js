@@ -180,7 +180,8 @@ export const useAuthStore = create((set) => ({
   user:            persist.get(STORAGE_KEYS.AUTH_USER, null),
   role:            persist.get(STORAGE_KEYS.AUTH_ROLE, null),
   isLoading:       false,
-  isAuthenticated: false,
+  // ── Initialise from persisted session so no auth redirect fires on cold load ──
+  isAuthenticated: !!persist.get(STORAGE_KEYS.AUTH_SESSION, null),
 
   setSession: (session) => { persist.set(STORAGE_KEYS.AUTH_SESSION, session); set({ session, isAuthenticated: !!session }) },
   setUser:    (user)    => { persist.set(STORAGE_KEYS.AUTH_USER, user); set({ user }) },

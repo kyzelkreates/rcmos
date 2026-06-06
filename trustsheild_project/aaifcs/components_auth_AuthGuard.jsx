@@ -36,25 +36,21 @@ const AUTH_REQUIRED = false
 // downstream ever reads null and triggers a redirect chain.
 function bootstrapDemoSession() {
   if (AUTH_REQUIRED) return
+  // app_App.jsx bootstrapDemoAccess() already writes all keys before React mounts.
+  // This is a no-op safety net in case AuthGuard is ever instantiated without App.
   try {
-    const existing = localStorage.getItem('apex:session')
-    if (!existing) {
-      localStorage.setItem('apex:session', JSON.stringify({
-        userId:    'demo-user',
-        role:      'super_admin',
-        username:  'demo',
-        fullName:  'Demo User',
-        email:     'demo@trustsheild.os',
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      }))
+    localStorage.setItem('apex:setup_complete', 'true')
+    if (!localStorage.getItem('apex:auth:session')) {
+      const s = {
+        userId: 'demo-user', role: 'super_admin', username: 'demo',
+        fullName: 'TrustSheild Demo User', email: 'demo@trustsheild.os',
+        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+      }
+      localStorage.setItem('apex:session',      JSON.stringify(s))
+      localStorage.setItem('apex:auth:session', JSON.stringify(s))
+      localStorage.setItem('apex:auth:role',    'super_admin')
     }
-    // Always ensure setup flag is set so LoginOrSetup never bounces to /auth/setup
-    if (localStorage.getItem('apex:setup_complete') !== 'true') {
-      localStorage.setItem('apex:setup_complete', 'true')
-    }
-  } catch (_) {
-    // localStorage unavailable — safe to ignore in SSR/test envs
-  }
+  } catch (_) {}
 }
 
 // Run once at module load (safe — no React hooks)

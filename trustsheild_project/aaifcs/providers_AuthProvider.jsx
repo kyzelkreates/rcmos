@@ -1,8 +1,19 @@
 /**
  * ============================================================
- * APEX AI — Auth Provider (Local Auth Mode)
- * Restores session from localStorage on app mount.
- * No Supabase dependency.
+ * TrustSheild OS™ — Auth Provider (Demo-Safe Local Auth)
+ * Powered by 4P3X Intelligent AI™  ·  Created by Kyzel Kreates™
+ * ============================================================
+ *
+ * DEMO MODE (AUTH_REQUIRED = false):
+ *   The IIFE in app_App.jsx already writes demo session to
+ *   localStorage before React mounts. This provider simply
+ *   calls getSession() to hydrate the Zustand store from that
+ *   persisted data. No loading flash, no redirect.
+ *
+ *   isAuthenticated is now initialised synchronously from
+ *   localStorage in core_storage.js so no auth-dependent
+ *   component ever sees false before this provider finishes.
+ *
  * ============================================================
  */
 
@@ -14,8 +25,11 @@ export default function AuthProvider({ children }) {
   const setLoading = useAuthStore(s => s.setLoading)
 
   useEffect(() => {
-    setLoading(true)
-    authService.getSession().finally(() => setLoading(false))
+    // Do NOT set isLoading=true here — the store already has
+    // isAuthenticated synced from localStorage. Just reconcile.
+    authService.getSession()
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   return children

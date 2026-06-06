@@ -4,12 +4,18 @@
  * Powered by 4P3X Intelligent AI™  ·  Created by Kyzel Kreates™
  * ============================================================
  *
- * DEMO/PUBLIC ACCESS BOOTSTRAP (runs before ANY component mounts):
- *   Sets apex:setup_complete = 'true' and writes a safe demo
- *   session so no auth redirect chain can fire anywhere in the app.
+ * DEMO/PUBLIC ACCESS BOOTSTRAP (synchronous, before React mounts):
+ *
+ *   Writes a demo session to ALL relevant localStorage keys so that:
+ *     1. apex:setup_complete   = 'true'      → no /auth/setup redirect
+ *     2. apex:session          = {...}        → authService.getSession() returns session
+ *     3. apex:auth:session     = {...}        → Zustand store loads isAuthenticated=true
+ *     4. apex:auth:user        = {...}        → useAuth().user is populated
+ *     5. apex:auth:role        = 'super_admin'→ useAuth().role is populated
+ *     6. apex:accounts         = [...]        → signIn never sees empty accounts
+ *
  *   AUTH_REQUIRED = false → full public/demo access.
- *   To re-enable for Live Mode: set AUTH_REQUIRED = true
- *   and remove the IIFE block below.
+ *
  * ============================================================
  */
 
@@ -21,55 +27,57 @@ import { useEffect }      from 'react'
 import { mountDashboardBridge } from './services_apex_apexBridge'
 
 // ─── DEMO/PUBLIC ACCESS BOOTSTRAP ────────────────────────────
-// Runs synchronously at module load — before React renders anything.
-// Guarantees apex:setup_complete = 'true' so no route ever redirects
-// to /auth/setup or /auth/login in demo/public mode.
-// AUTH_REQUIRED = false (master switch, matches AuthGuard)
+// Runs synchronously at module load — BEFORE React renders ANYTHING.
 ;(function bootstrapDemoAccess() {
   const AUTH_REQUIRED = false
   if (AUTH_REQUIRED) return
+
   try {
-    // 1. Setup flag — prevents any LoginOrSetup redirect to /auth/setup
-    if (localStorage.getItem('apex:setup_complete') !== 'true') {
-      localStorage.setItem('apex:setup_complete', 'true')
+    const DEMO_SESSION = {
+      userId:    'demo-user',
+      role:      'super_admin',
+      username:  'demo',
+      fullName:  'TrustSheild Demo User',
+      email:     'demo@trustsheild.os',
+      expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,  // 1 year, ms number
     }
-    // 2. Demo session — fix ISO-string expiresAt from old bootstrap,
-    //    or write fresh session if absent/expired
-    let needsSession = true
-    const raw = localStorage.getItem('apex:session')
-    if (raw) {
-      try {
-        const s = JSON.parse(raw)
-        // Old bootstrap wrote expiresAt as ISO string — rewrite with ms
-        if (typeof s.expiresAt === 'string' && s.expiresAt.includes('T')) {
-          needsSession = true  // will be overwritten below
-        } else if (typeof s.expiresAt === 'number' && Date.now() < s.expiresAt) {
-          needsSession = false  // valid ms-based session — keep it
-        }
-      } catch (_) { needsSession = true }
-    }
-    if (needsSession) {
-      localStorage.setItem('apex:session', JSON.stringify({
-        userId:    'demo-user',
-        role:      'super_admin',
+    const DEMO_USER = {
+      id:    'demo-user',
+      email: 'demo@trustsheild.os',
+      user_metadata: {
+        full_name: 'TrustSheild Demo User',
         username:  'demo',
-        fullName:  'TrustSheild Demo User',
-        email:     'demo@trustsheild.os',
-        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
-      }))
+        role:      'super_admin',
+        avatar:    'DU',
+      }
     }
-    // 3. Demo accounts — prevents authService from returning empty array
+    const DEMO_ACCOUNTS = [{
+      id:       'demo-user',
+      username: 'demo',
+      email:    'demo@trustsheild.os',
+      password: 'demo1234',
+      role:     'super_admin',
+      fullName: 'TrustSheild Demo User',
+      avatar:   'DU',
+    }]
+
+    // 1. Setup flag
+    localStorage.setItem('apex:setup_complete', 'true')
+
+    // 2. authService session key  (used by authService.getSession)
+    localStorage.setItem('apex:session', JSON.stringify(DEMO_SESSION))
+
+    // 3. Zustand store keys  (used by useAuthStore initial state)
+    //    These are what core_storage.js STORAGE_KEYS.AUTH_SESSION/USER/ROLE map to
+    localStorage.setItem('apex:auth:session', JSON.stringify(DEMO_SESSION))
+    localStorage.setItem('apex:auth:user',    JSON.stringify(DEMO_USER))
+    localStorage.setItem('apex:auth:role',    'super_admin')
+
+    // 4. Accounts list (authService signIn lookup)
     if (!localStorage.getItem('apex:accounts')) {
-      localStorage.setItem('apex:accounts', JSON.stringify([{
-        id:       'demo-user',
-        username: 'demo',
-        email:    'demo@trustsheild.os',
-        password: 'demo1234',
-        role:     'super_admin',
-        fullName: 'TrustSheild Demo User',
-        avatar:   'DU',
-      }]))
+      localStorage.setItem('apex:accounts', JSON.stringify(DEMO_ACCOUNTS))
     }
+
   } catch (_) {
     // localStorage unavailable (SSR/test/private) — safe no-op
   }
