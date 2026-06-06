@@ -39,9 +39,8 @@ const T = {
   card:   'rgba(13,13,18,0.92)',
 }
 
-// ─── Route helpers ────────────────────────────────────────────
-const SETUP_KEY   = 'apex:setup_complete'
-const setupDone   = () => localStorage.getItem(SETUP_KEY) === 'true'
+// ─── Route helpers ─────────────────────────────────────────────
+// AUTH_REQUIRED = false — all routes public; no setup check needed
 
 // ─── Primitives ───────────────────────────────────────────────
 function GlassCard({ children, glow = false, goldBorder = false, className = '' }) {
@@ -187,11 +186,9 @@ function ShieldMark({ size = 64 }) {
 // ═══════════════════════════════════════════════════════════════
 export default function Landing() {
   const navigate  = useNavigate()
-  const isSetup   = setupDone()
-
-  const goDashboard = () => isSetup ? navigate('/dashboard') : navigate('/auth/setup')
+  const goDashboard = () => navigate('/dashboard')
   const goPWA       = () => navigate('/driver-app')
-  const goConfig    = () => isSetup ? navigate('/settings') : navigate('/auth/setup')
+  const goConfig    = () => navigate('/settings')
   const goDemo      = () => goDashboard()
 
   return (
@@ -1183,7 +1180,7 @@ export default function Landing() {
               { icon: 'Database',        label: 'Configure API Providers',             variant: 'purple', fn: goConfig },
               { icon: 'Play',            label: 'View Demo Mode',                      variant: 'gold',   fn: goDemo },
               { icon: 'FolderOpen',      label: 'View Reports & Evidence',             variant: 'ghost',  fn: goDashboard },
-              { icon: 'Brain',           label: 'Open AI Command Centre',              variant: 'ghost',  fn: () => isSetup ? navigate('/ai') : navigate('/auth/setup') },
+              { icon: 'Brain',           label: 'Open AI Command Centre',              variant: 'ghost',  fn: () => navigate('/ai') },
               { icon: 'Home',            label: 'Return Home',                         variant: 'ghost',  fn: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
             ].map((item, i) => (
               <Btn key={i} onClick={item.fn} variant={item.variant} fullWidth size="md"
