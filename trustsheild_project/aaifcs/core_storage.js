@@ -103,6 +103,12 @@ export const STORAGE_KEYS = {
   TS_ENTITY_PROVIDER_MAP:  'trustsheild_entity_provider_map',
   TS_API_TEST_RESULTS:     'trustsheild_api_test_results',
   TS_CONFIG_GUARD_EVENTS:  'trustsheild_config_guard_events',
+  // ── TrustSheild OS™ Sync Keys (Run 9) ────────────────────
+  TS_SYNC_STATUS:      'trustsheild_sync_status',
+  TS_SYNC_QUEUE:       'trustsheild_sync_queue',
+  TS_SYNC_EVENTS:      'trustsheild_sync_events',
+  TS_LAST_SYNC:        'trustsheild_last_sync',
+  TS_BACKEND_SYNC:     'trustsheild_backend_sync_state',
 
 }
 
@@ -919,3 +925,140 @@ export function applyConfigGuard(value, logGuardEvent) {
   }
   return { safe: true, reason: null }
 }
+
+// ─── TrustSheild OS™ Sync Store (Run 9) ──────────────────────
+// Central sync state: queue, events, status, last-sync time.
+// This is the 13th distinct Zustand store — additive only.
+//
+// Sync Modes (read from useTrustStore.mode + useConfigStore):
+//   demo-local     — Demo Mode ON. Local SSOT sync preview.
+//   not-configured — Live Mode ON but no backend config saved.
+//   saved-pending  — Backend config saved, not verified.
+//   validation-ok  — Client-side validation passed.
+//   connected      — Live test passed (set only after real test).
+//   offline        — Browser offline.
+//   error          — Last sync attempt failed.
+//
+// ⚠  NEVER store service role keys, private keys, or
+//    backend-only secrets in this store or sync payloads.
+// ============================================================
+export const useSyncStore = create((set, get) => ({
+
+  // ── Sync Status Object ────────────────────────────────────
+  syncStatus: persist.get(STORAGE_KEYS.TS_SYNC_STATUS, {
+    mode:             'demo',
+    backendProvider:  'local',
+    connectionStatus: 'demo-local',
+    syncDirection:    'none',
+    lastSyncAt:       null,
+    pendingQueueCount: 0,
+    errorMessage:     null,
+    dataFreshness:    'unknown',
+    source:           'demo',
+  }),
+
+  // ── Offline submission queue ──────────────────────────────
+  syncQueue: persist.get(STORAGE_KEYS.TS_SYNC_QUEUE, []),
+
+  // ── Sync event log (last 100 events) ─────────────────────
+  syncEvents: persist.get(STORAGE_KEYS.TS_SYNC_EVENTS, []),
+
+  // ── Last confirmed sync timestamps ───────────────────────
+  lastSync: persist.get(STORAGE_KEYS.TS_LAST_SYNC, null),
+
+  // ── Backend sync connection state ────────────────────────
+  backendSyncState: persist.get(STORAGE_KEYS.TS_BACKEND_SYNC, {
+    provider: 'none',
+    tested:   false,
+    testedAt: null,
+    result:   null,
+  }),
+
+  // ── Update sync status ────────────────────────────────────
+  updateSyncStatus: (patch) => {
+    const syncStatus = { ...(get().syncStatus || {}), ...patch }
+    persist.set(STORAGE_KEYS.TS_SYNC_STATUS, syncStatus)
+    set({ syncStatus })
+  },
+
+  // ── Log a sync event ──────────────────────────────────────
+  logSyncEvent: (event) => {
+    const entry = {
+      id:        `se-${Date.now()}`,
+      ts:        new Date().toISOString(),
+      source:    'demo',
+      ...event,
+    }
+    const syncEvents = [entry, ...(get().syncEvents || [])].slice(0, 100)
+    persist.set(STORAGE_KEYS.TS_SYNC_EVENTS, syncEvents)
+    set({ syncEvents })
+    // Also update lastSyncAt
+    const lastSync = entry.ts
+    persist.set(STORAGE_KEYS.TS_LAST_SYNC, lastSync)
+    set({ lastSync })
+    // Update pending count
+    get().refreshQueueCount()
+    return entry
+  },
+
+  // ── Add item to offline queue ─────────────────────────────
+  enqueueSubmission: (item) => {
+    const entry = {
+      id:            `sq-${Date.now()}`,
+      createdAt:     new Date().toISOString(),
+      lastAttemptAt: null,
+      attemptCount:  0,
+      status:        'pending',
+      errorMessage:  null,
+      source:        'demo',
+      ...item,
+    }
+    const syncQueue = [entry, ...(get().syncQueue || [])]
+    persist.set(STORAGE_KEYS.TS_SYNC_QUEUE, syncQueue)
+    set({ syncQueue })
+    get().refreshQueueCount()
+    return entry
+  },
+
+  // ── Update queue item status ──────────────────────────────
+  updateQueueItem: (id, patch) => {
+    const syncQueue = (get().syncQueue || []).map(q =>
+      q.id === id
+        ? { ...q, ...patch, lastAttemptAt: new Date().toISOString(), attemptCount: (q.attemptCount || 0) + 1 }
+        : q
+    )
+    persist.set(STORAGE_KEYS.TS_SYNC_QUEUE, syncQueue)
+    set({ syncQueue })
+    get().refreshQueueCount()
+  },
+
+  // ── Clear completed queue items ───────────────────────────
+  clearSentQueue: () => {
+    const syncQueue = (get().syncQueue || []).filter(q => q.status === 'pending' || q.status === 'failed')
+    persist.set(STORAGE_KEYS.TS_SYNC_QUEUE, syncQueue)
+    set({ syncQueue })
+    get().refreshQueueCount()
+  },
+
+  // ── Clear ALL queue items (demo reset) ───────────────────
+  clearAllQueue: () => {
+    persist.set(STORAGE_KEYS.TS_SYNC_QUEUE, [])
+    set({ syncQueue: [] })
+    get().refreshQueueCount()
+  },
+
+  // ── Refresh pending queue count in status ─────────────────
+  refreshQueueCount: () => {
+    const pending = (get().syncQueue || []).filter(q => q.status === 'pending' || q.status === 'failed').length
+    const syncStatus = { ...(get().syncStatus || {}), pendingQueueCount: pending }
+    persist.set(STORAGE_KEYS.TS_SYNC_STATUS, syncStatus)
+    set({ syncStatus })
+  },
+
+  // ── Save backend sync test result ─────────────────────────
+  saveBackendSyncState: (state) => {
+    const backendSyncState = { ...(get().backendSyncState || {}), ...state, testedAt: new Date().toISOString() }
+    persist.set(STORAGE_KEYS.TS_BACKEND_SYNC, backendSyncState)
+    set({ backendSyncState })
+  },
+}))

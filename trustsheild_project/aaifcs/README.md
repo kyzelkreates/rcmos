@@ -183,3 +183,16 @@ Located in the project root alongside the other `sql_*.txt` files.
 ### Ethical Notice
 
 Monitored entities must be owned brands, authorised clients, or public information sources only. No private surveillance, harassment, doxxing, or unauthorised tracking. AI guidance is advisory and must be reviewed by a responsible human before action.
+
+---
+
+## TrustSheild OS™ Sync Setup (Run 9)
+
+- **Demo/local sync** works without any backend — dashboard and PWA share the same local SSOT.
+- **Live sync** requires backend provider configuration (Backend tab in Command Dashboard).
+- **Supabase live sync** requires executing `sql_7_trustsheild_supabase_setup.sql.txt` first, then configuring Project URL + anon key.
+- **RLS must remain enabled** — never disable RLS policies.
+- **Use anon key only** in frontend configuration. Service role key must never be used in frontend.
+- **Offline queue** stores pending PWA submissions locally until sync is available (`trustsheild_sync_queue`).
+- **Data freshness warnings** are shown when backend is not connected or queue is pending.
+- Sync aligns with: `sql_7_trustsheild_supabase_setup.sql.txt`

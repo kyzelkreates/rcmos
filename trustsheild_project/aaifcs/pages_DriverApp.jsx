@@ -37,9 +37,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Icon from './components_ui_Icon'
-import { usePwaStore, useTaskStore, useIdentityStore, useTrustStore, useConfigStore } from './core_storage'
+import { usePwaStore, useTaskStore, useIdentityStore, useTrustStore, useConfigStore, useSyncStore } from './core_storage'
 import { PWA_DEMO_DATA, TASK_SEED_DATA, IDENTITY_SEED_DATA } from './data_trustsheild_demo'
 import APP_CONFIG from './config_app'
+import { getSyncMode, SYNC_STATUS_LABELS, FRESHNESS_LABELS, timeAgo as syncTimeAgo, localDemoAdapter } from './services_trustsheild_sync'
 
 // ─── Colour maps ──────────────────────────────────────────────
 const RISK_COLOR = {
@@ -857,7 +858,16 @@ function TasksScreen({ pwaTasks, updateTask, onTab, activePwaId, isDemo }) {
 const UPDATE_TYPES = ['Situation Update', 'Check-in', 'Progress Report', 'Issue Log', 'Confirmation', 'Request for Guidance']
 const URGENCY_LEVELS = ['Low', 'Medium', 'High', 'Critical']
 
-function UpdateScreen({ addPwaUpdate, pwaUpdates, pwaCase }) {
+function UpdateScreen({ addPwaUpdate, pwaUpdates, pwaCase, isDemo, currentPwaId, logSyncEvent, addFeedItem, enqueueSubmission }) {
+  // Sync wrapper — fires after local store update
+  const handleSyncedUpdate = (message) => {
+    if (isDemo) {
+      localDemoAdapter.pushSituationUpdate({ pwaIdentityId: currentPwaId, message, logSyncEvent, addFeedItem })
+    } else {
+      enqueueSubmission?.({ pwaIdentityId: currentPwaId, type: 'situation_update', payload: { message }, source: 'live' })
+      logSyncEvent?.({ eventType: 'pwa_update_queued', direction: 'pwa-to-dashboard', pwaId: currentPwaId, status: 'pending', summary: `Situation update queued (live mode)`, source: 'live' })
+    }
+  }
   const [type,    setType]    = useState('Situation Update')
   const [message, setMessage] = useState('')
   const [urgency, setUrgency] = useState('Medium')
@@ -963,7 +973,15 @@ const EVIDENCE_ICONS_MAP = {
   'Media Mention':         'Newspaper',
 }
 
-function EvidenceScreen({ pwaNotes, addNote, pwaCase }) {
+function EvidenceScreen({ pwaNotes, addNote, pwaCase, isDemo, currentPwaId, logSyncEvent, addFeedItem, enqueueSubmission }) {
+  const handleSyncedEvidence = (title, description) => {
+    if (isDemo) {
+      localDemoAdapter.pushEvidenceItem({ pwaIdentityId: currentPwaId, title, description, logSyncEvent, addFeedItem })
+    } else {
+      enqueueSubmission?.({ pwaIdentityId: currentPwaId, type: 'evidence_item', payload: { title, description }, source: 'live' })
+      logSyncEvent?.({ eventType: 'pwa_update_queued', direction: 'pwa-to-dashboard', pwaId: currentPwaId, status: 'pending', summary: `Evidence queued: "${title?.slice(0,40)}"`, source: 'live' })
+    }
+  }
   const [evType,  setEvType]  = useState('Note')
   const [desc,    setDesc]    = useState('')
   const [loading, setLoading] = useState(false)
@@ -1055,7 +1073,14 @@ function EvidenceScreen({ pwaNotes, addNote, pwaCase }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN 6 — Draft Response Review
 // ═══════════════════════════════════════════════════════════════
-function DraftsScreen({ pwaDraftReviews, updateDraftReview }) {
+function DraftsScreen({ pwaDraftReviews, updateDraftReview, isDemo, currentPwaId, logSyncEvent, addFeedItem }) {
+  const handleSyncedDraftReview = (draftId, status, comments) => {
+    if (isDemo) {
+      localDemoAdapter.pushDraftReview({ pwaIdentityId: currentPwaId, draftId, reviewStatus: status, comments, logSyncEvent, addFeedItem })
+    } else {
+      logSyncEvent?.({ eventType: 'draft_review_submitted', direction: 'pwa-to-dashboard', pwaId: currentPwaId, status: 'pending', summary: `Draft review queued (live mode)`, source: 'live' })
+    }
+  }
   const [toast, setToast] = useState(null)
 
   const handleReview = useCallback((id, action) => {
@@ -1176,7 +1201,15 @@ const ESCALATION_REASONS = [
   'Other',
 ]
 
-function EscalationScreen({ addEscalation, pwaEscalations, pwaCase }) {
+function EscalationScreen({ addEscalation, pwaEscalations, pwaCase, isDemo, currentPwaId, logSyncEvent, addFeedItem, enqueueSubmission }) {
+  const handleSyncedEscalation = (reason, urgency) => {
+    if (isDemo) {
+      localDemoAdapter.pushEscalation({ pwaIdentityId: currentPwaId, reason, urgency, logSyncEvent, addFeedItem })
+    } else {
+      enqueueSubmission?.({ pwaIdentityId: currentPwaId, type: 'escalation_request', payload: { reason, urgency }, source: 'live' })
+      logSyncEvent?.({ eventType: 'pwa_update_queued', direction: 'pwa-to-dashboard', pwaId: currentPwaId, status: 'pending', summary: `Escalation queued [${urgency}]`, source: 'live' })
+    }
+  }
   const [reason,  setReason]  = useState(ESCALATION_REASONS[0])
   const [urgency, setUrgency] = useState('High')
   const [message, setMessage] = useState('')
@@ -1269,255 +1302,240 @@ function EscalationScreen({ addEscalation, pwaEscalations, pwaCase }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN 8 — Sync Status
 // ═══════════════════════════════════════════════════════════════
-function SyncScreen({ profile, isDemo, backendProvider }) {
-  const SYNC_ROWS = [
-    { label: 'PWA Mode',         value: 'Demo',                   color: '#8f5cff' },
-    { label: 'Sync Status',      value: 'Local Demo / No Backend', color: '#fbbf24' },
-    { label: 'Unique PWA ID',    value: 'Pending — Run 5',        color: '#5a5f6b' },
-    { label: 'Dashboard Link',   value: 'Pending Sync Setup',     color: '#5a5f6b' },
-    { label: 'Last Local Update',value: new Date().toLocaleTimeString('en-GB', { hour12: false }), color: '#37ff8b' },
-    { label: 'Backend',          value: 'Not configured yet',     color: '#5a5f6b' },
-    { label: 'App Version',      value: APP_CONFIG.version,       color: '#a8adb7' },
-    { label: 'Build Stage',      value: APP_CONFIG.buildStage,    color: '#a8adb7' },
-  ]
+function SyncScreen({ profile, isDemo, backendProvider, pendingQueue, syncEvents, logSyncEvent, enqueueSubmission, clearSentQueue, addFeedItem, currentPwaId, updateSyncStatus }) {
+  const [submitting, setSubmitting] = useState(false)
+  const [submissionType, setSubmissionType] = useState('situation_update')
+  const [submissionMsg, setSubmissionMsg] = useState('')
+  const [submissionTitle, setSubmissionTitle] = useState('')
+  const [urgency, setUrgency] = useState('normal')
+  const [toast, setToast] = useState(null)
+  const [showEventLog, setShowEventLog] = useState(false)
+
+  const modeInfo    = getSyncMode()
+  const statusMeta  = SYNC_STATUS_LABELS[modeInfo.connectionStatus] || SYNC_STATUS_LABELS['not-configured']
+  const freshMeta   = FRESHNESS_LABELS[modeInfo.dataFreshness || 'unknown']
+  const pwaId       = currentPwaId || profile?.pwaIdLabel || '—'
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3500) }
+
+  // ── Generic submission handler ─────────────────────────────
+  const handleSubmit = () => {
+    if (!submissionMsg.trim()) return
+    setSubmitting(true)
+
+    setTimeout(() => {
+      const payload = { message: submissionMsg, title: submissionTitle, urgency }
+
+      if (isDemo) {
+        // Demo/local mode — push directly to dashboard stores
+        if (submissionType === 'situation_update') {
+          localDemoAdapter.pushSituationUpdate({ pwaIdentityId: pwaId, message: submissionMsg, logSyncEvent, addFeedItem })
+          showToast('Situation update sent to dashboard (demo/local).')
+        } else if (submissionType === 'evidence_item') {
+          localDemoAdapter.pushEvidenceItem({ pwaIdentityId: pwaId, title: submissionTitle || submissionMsg.slice(0,40), description: submissionMsg, logSyncEvent, addFeedItem })
+          showToast('Evidence note sent to dashboard (demo/local).')
+        } else if (submissionType === 'escalation_request') {
+          localDemoAdapter.pushEscalation({ pwaIdentityId: pwaId, reason: submissionMsg, urgency, logSyncEvent, addFeedItem })
+          showToast('Escalation request sent to dashboard (demo/local).')
+        }
+      } else {
+        // Live mode — queue for backend sync
+        enqueueSubmission?.({ pwaIdentityId: pwaId, type: submissionType, payload, source: 'live' })
+        logSyncEvent?.({ eventType: 'pwa_update_queued', direction: 'pwa-to-dashboard', pwaId, status: 'pending', summary: `${submissionType} queued — backend not connected`, source: 'live' })
+        showToast('Backend sync not configured. Update saved to local queue.')
+      }
+
+      setSubmissionMsg('')
+      setSubmissionTitle('')
+      setSubmitting(false)
+    }, 350)
+  }
+
+  // ── Run sync check from PWA ────────────────────────────────
+  const handleSyncNow = () => {
+    if (isDemo) {
+      localDemoAdapter.checkIn({ pwaIdentityId: pwaId, logSyncEvent })
+      updateSyncStatus?.({ lastSyncAt: new Date().toISOString(), dataFreshness: 'fresh' })
+      showToast('Demo/local sync check complete.')
+    } else {
+      showToast('Backend sync not configured yet. Your data is saved locally.')
+    }
+  }
 
   return (
     <div className="space-y-4">
-      {/* Sync status card */}
+      {/* Toast */}
+      {toast && <SuccessToast message={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Mode banner */}
+      <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+        style={isDemo ? { background: 'rgba(143,92,255,0.07)', border: '1px solid rgba(143,92,255,0.2)' } : { background: 'rgba(55,255,139,0.07)', border: '1px solid rgba(55,255,139,0.2)' }}>
+        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: statusMeta.color, boxShadow: `0 0 6px ${statusMeta.color}88` }} />
+        <span className="text-xs font-semibold flex-1" style={{ color: statusMeta.color }}>{statusMeta.label}</span>
+        <DemoBadge small />
+      </div>
+
+      {/* Freshness / pending warning */}
+      {(pendingQueue > 0 || !isDemo) && (
+        <div className="flex items-start gap-2 p-2.5 rounded-xl"
+          style={pendingQueue > 0 ? { background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)' } : { background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.15)' }}>
+          <Icon name="AlertCircle" size={12} style={{ color: pendingQueue > 0 ? '#f87171' : '#fbbf24', flexShrink: 0, marginTop: 1 }} />
+          <p className="text-[10px]" style={{ color: pendingQueue > 0 ? '#f87171' : '#fbbf24' }}>
+            {pendingQueue > 0
+              ? `${pendingQueue} submission${pendingQueue > 1 ? 's' : ''} queued locally. Sync when backend is configured.`
+              : 'Data freshness warning: this view may not include updates from other devices until backend sync is connected.'}
+          </p>
+        </div>
+      )}
+
+      {/* ── Backend / Sync readiness status ── */}
       <Card>
-        <CardHeader icon="Wifi" iconColor="#8f5cff" title="Sync Status" subtitle="Demo Mode — local only" right={<DemoBadge />} />
-        <div className="p-4 space-y-1">
-          {SYNC_ROWS.map(r => (
-            <div key={r.label} className="flex justify-between items-center py-2.5"
-              style={{ borderBottom: '1px solid rgba(214,168,79,0.06)' }}>
+        <div className="p-4 space-y-0">
+          <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'rgba(214,168,79,0.5)' }}>PWA Sync Status</div>
+          {[
+            { label: 'PWA Mode',           value: isDemo ? 'Demo / Local' : 'Live — Backend Required', color: isDemo ? '#8f5cff' : '#37ff8b' },
+            { label: 'PWA Identity',        value: pwaId,                                                 color: '#d6a84f' },
+            { label: 'Sync Status',         value: statusMeta.label,                                       color: statusMeta.color },
+            { label: 'Backend Provider',    value: backendProvider ? `${backendProvider} (saved)` : 'Not Configured', color: backendProvider ? '#d6a84f' : '#f87171' },
+            { label: 'Connection',          value: modeInfo.connectionStatus === 'demo-local' ? 'Demo/Local SSOT' : modeInfo.connectionStatus, color: statusMeta.color },
+            { label: 'Pending Queue',       value: `${pendingQueue} item${pendingQueue !== 1 ? 's' : ''}`, color: pendingQueue > 0 ? '#fbbf24' : '#5a5f6b' },
+            { label: 'Monitoring APIs',     value: 'Not Configured',                                      color: '#5a5f6b' },
+            { label: 'Data Freshness',      value: freshMeta.label,                                        color: freshMeta.color },
+          ].map(r => (
+            <div key={r.label} className="flex justify-between items-center py-2" style={{ borderBottom: '1px solid rgba(214,168,79,0.05)' }}>
               <span className="text-xs" style={{ color: '#5a5f6b' }}>{r.label}</span>
-              <span className="text-xs font-semibold text-right ml-4" style={{ color: r.color }}>{r.value}</span>
+              <span className="text-xs font-medium" style={{ color: r.color }}>{r.value}</span>
             </div>
           ))}
         </div>
+        <div className="px-4 pb-4 flex flex-wrap gap-2">
+          <TapButton onClick={handleSyncNow} variant="gold" fullWidth>
+            <Icon name="RefreshCw" size={13} />Sync Now
+          </TapButton>
+        </div>
+        {!isDemo && (
+          <div className="px-4 pb-4">
+            <p className="text-[10px]" style={{ color: '#3a3f4b' }}>
+              Backend sync not configured yet. Configure backend provider in the Command Dashboard → Backend tab. SQL: trustsheild-os-supabase-setup.sql.txt.
+            </p>
+          </div>
+        )}
       </Card>
 
-      {/* PWA profile */}
+      {/* ── Submit Update to Dashboard ── */}
       <Card>
-        <CardHeader icon="User" iconColor="#d6a84f" title="Responder Profile" subtitle="Demo placeholder" />
-        <div className="p-4 space-y-2">
+        <CardHeader icon="Send" iconColor="#37ff8b" title="Submit to Dashboard" subtitle={isDemo ? 'Demo/local sync — instant' : 'Live Mode — queued locally'} />
+        <div className="p-4 space-y-3">
+          {/* Submission type selector */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { key: 'situation_update',   label: 'Situation',   icon: 'MessageCircle' },
+              { key: 'evidence_item',      label: 'Evidence',    icon: 'FolderOpen' },
+              { key: 'escalation_request', label: 'Escalation',  icon: 'AlertTriangle' },
+            ].map(t => (
+              <button key={t.key} onClick={() => setSubmissionType(t.key)}
+                className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-[10px] font-semibold transition-all"
+                style={submissionType === t.key
+                  ? { background: 'rgba(214,168,79,0.15)', color: '#d6a84f', border: '1px solid rgba(214,168,79,0.4)' }
+                  : { background: 'rgba(13,13,18,0.6)', color: '#5a5f6b', border: '1px solid rgba(90,95,107,0.2)' }}>
+                <Icon name={t.icon} size={14} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {submissionType === 'evidence_item' && (
+            <TextInput label="Evidence Title" value={submissionTitle} onChange={setSubmissionTitle} placeholder="Brief evidence title…" />
+          )}
+          <TextInput
+            label={submissionType === 'situation_update' ? 'Situation Update' : submissionType === 'evidence_item' ? 'Evidence Description' : 'Escalation Reason'}
+            value={submissionMsg} onChange={setSubmissionMsg}
+            placeholder={submissionType === 'escalation_request' ? 'Describe the situation requiring escalation…' : 'Describe the update in detail…'}
+            multiline rows={3}
+          />
+          {submissionType === 'escalation_request' && (
+            <SelectInput label="Urgency" value={urgency} onChange={setUrgency} options={[
+              { value: 'low', label: 'Low' },
+              { value: 'normal', label: 'Normal' },
+              { value: 'high', label: 'High — Requires Immediate Attention' },
+              { value: 'critical', label: 'Critical — Stop Everything' },
+            ]} />
+          )}
+          <TapButton onClick={handleSubmit} variant="green" fullWidth disabled={!submissionMsg.trim()} loading={submitting}>
+            <Icon name="Send" size={14} />
+            {isDemo ? 'Send to Dashboard (Demo/Local)' : 'Save to Queue (Backend Not Configured)'}
+          </TapButton>
+          {!isDemo && (
+            <p className="text-[10px] text-center" style={{ color: '#3a3f4b' }}>
+              Backend sync not configured yet. Your update is saved locally and will sync when backend is set up.
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {/* ── Recent Sync Events (last 5) ── */}
+      {syncEvents && syncEvents.length > 0 && (
+        <Card>
+          <CardHeader icon="Activity" iconColor="#8f5cff" title="Recent Sync Events" subtitle="Last 5 events — full log in dashboard"
+            right={<button onClick={() => setShowEventLog(!showEventLog)} style={{ color: '#5a5f6b' }}><Icon name={showEventLog ? 'ChevronUp' : 'ChevronDown'} size={14} /></button>}
+          />
+          {showEventLog && (
+            <div className="divide-y" style={{ borderTop: '1px solid rgba(214,168,79,0.06)' }}>
+              {syncEvents.slice(0, 5).map(e => (
+                <div key={e.id} className="flex items-start gap-2 px-4 py-2.5">
+                  <Icon name="Activity" size={11} style={{ color: '#8f5cff', flexShrink: 0, marginTop: 1 }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-semibold truncate" style={{ color: '#c8ccd2' }}>{e.summary || e.eventType}</div>
+                    <div className="text-[9px]" style={{ color: '#3a3f4b' }}>{syncTimeAgo(e.ts)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* ── PWA Profile ── */}
+      <Card>
+        <CardHeader icon="User" iconColor="#d6a84f" title="Responder Profile" subtitle="Current PWA identity" />
+        <div className="p-4 space-y-0">
           {[
             { label: 'Display Name', value: profile?.displayName || '—' },
             { label: 'Role',         value: profile?.role || '—' },
             { label: 'Organisation', value: profile?.organisation || '—' },
-            { label: 'PWA ID',       value: profile?.pwaIdLabel || 'Pending Run 5' },
+            { label: 'PWA ID',       value: pwaId },
+            { label: 'App Version',  value: APP_CONFIG.version },
+            { label: 'Build Stage',  value: APP_CONFIG.buildStage },
           ].map(r => (
-            <div key={r.label} className="flex justify-between py-2"
-              style={{ borderBottom: '1px solid rgba(214,168,79,0.06)' }}>
+            <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid rgba(214,168,79,0.05)' }}>
               <span className="text-xs" style={{ color: '#5a5f6b' }}>{r.label}</span>
-              <span className="text-xs font-semibold" style={{ color: '#c8ccd2' }}>{r.value}</span>
+              <span className="text-xs font-semibold text-right ml-4" style={{ color: '#c8ccd2' }}>{r.value}</span>
             </div>
           ))}
         </div>
       </Card>
 
-      {/* PWA install info */}
+      {/* ── Install info ── */}
       <Card>
         <CardHeader icon="Download" iconColor="#37ff8b" title="Install Response PWA" subtitle="Available on any device" />
-        <div className="p-4 space-y-3">
-          <p className="text-sm" style={{ color: '#a8adb7' }}>
-            This app can be installed directly on your device. Once installed, it opens immediately without a browser — tap the share/menu icon in your browser to install.
-          </p>
-          <div className="space-y-2 text-xs" style={{ color: '#5a5f6b' }}>
-            <div className="flex items-center gap-2"><Icon name="CheckCircle" size={12} style={{ color: '#37ff8b' }} /> Works offline (local demo)</div>
-            <div className="flex items-center gap-2"><Icon name="CheckCircle" size={12} style={{ color: '#37ff8b' }} /> No app store required</div>
-            <div className="flex items-center gap-2"><Icon name="CheckCircle" size={12} style={{ color: '#37ff8b' }} /> Opens Response PWA, not dashboard</div>
-            <div className="flex items-center gap-2"><Icon name="Clock" size={12} style={{ color: '#fbbf24' }} /> Live backend sync — future run</div>
-          </div>
+        <div className="p-4 space-y-2">
+          {[
+            { i: 'CheckCircle', c: '#37ff8b', t: 'Works offline (demo/local)' },
+            { i: 'CheckCircle', c: '#37ff8b', t: 'No app store required' },
+            { i: 'CheckCircle', c: '#37ff8b', t: 'Opens Response PWA, not dashboard' },
+            { i: 'Clock',       c: '#fbbf24', t: 'Live backend sync — configure in Run 9' },
+          ].map((r, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs" style={{ color: '#a8adb7' }}>
+              <Icon name={r.i} size={12} style={{ color: r.c }} />
+              {r.t}
+            </div>
+          ))}
         </div>
       </Card>
 
-      {/* Ethical / safety notice */}
-      <div className="p-4 rounded-2xl"
-        style={{ background: 'rgba(143,92,255,0.06)', border: '1px solid rgba(143,92,255,0.2)' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <Icon name="ShieldCheck" size={14} style={{ color: '#8f5cff' }} />
-          <span className="text-xs font-bold" style={{ color: '#8f5cff' }}>Ethical Use Notice</span>
-        </div>
-        <p className="text-xs leading-relaxed" style={{ color: '#a87dff' }}>
-          AI guidance and response support are advisory only. All crisis, reputation, legal, public, or stakeholder actions must be reviewed by a responsible human before action.
-        </p>
-        <p className="text-[10px] mt-2" style={{ color: '#5a3f8f' }}>
-          TrustSheild OS™ must not be used for harassment, fake reviews, impersonation, threats, defamation, misinformation, or unlawful activity.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ROOT — TrustSheild Response PWA
-// ═══════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════
-// SCREEN 9 — PWA Identity & Pairing (Run 5)
-// ═══════════════════════════════════════════════════════════════
-function IdentityScreen({ onTab }) {
-  const { pwaIdentities, currentPwaId, pairByCode, setCurrentPwaId, seedIdentities } = useIdentityStore()
-
-  // Seed identities on mount if needed
-  useEffect(() => { seedIdentities(IDENTITY_SEED_DATA) }, [])
-
-  const currentIdentity = pwaIdentities?.find(i => i.id === currentPwaId) || null
-  const [codeInput,  setCodeInput]  = useState('')
-  const [pairResult, setPairResult] = useState(null)  // null | { success, error?, identity? }
-  const [pairing,    setPairing]    = useState(false)
-
-  const handlePair = () => {
-    if (!codeInput.trim()) return
-    setPairing(true)
-    setTimeout(() => {
-      const result = pairByCode(codeInput)
-      setPairResult(result)
-      if (result.success) setCodeInput('')
-      setPairing(false)
-    }, 600)
-  }
-
-  const handleSelect = (id) => {
-    setCurrentPwaId(id)
-    setPairResult({ success: true, identity: pwaIdentities?.find(i => i.id === id) })
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Current identity */}
-      {currentIdentity ? (
-        <Card glow>
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#37ff8b' }}>Active Identity</span>
-              <DemoBadge />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold" style={{ background: 'rgba(55,255,139,0.1)', border: '1px solid rgba(55,255,139,0.25)', color: '#37ff8b', fontSize: '0.9rem' }}>
-                {currentIdentity.avatar}
-              </div>
-              <div>
-                <div className="text-base font-bold" style={{ color: '#f5f5f2' }}>{currentIdentity.displayName}</div>
-                <div className="text-xs" style={{ color: '#5a5f6b' }}>{currentIdentity.roleType} · {currentIdentity.organisationName}</div>
-              </div>
-            </div>
-            <div className="space-y-1.5 text-xs">
-              {[
-                { label: 'PWA ID',        value: currentIdentity.id,           mono: true,  color: '#d6a84f' },
-                { label: 'Pairing Code',  value: currentIdentity.pairingCode,  mono: true,  color: '#d6a84f' },
-                { label: 'Sync Status',   value: currentIdentity.syncStatus,   mono: false, color: '#37ff8b' },
-                { label: 'Backend',       value: currentIdentity.backendStatus, mono: false, color: '#5a5f6b' },
-                { label: 'Role',          value: currentIdentity.roleType,     mono: false, color: '#c8ccd2' },
-              ].map(r => (
-                <div key={r.label} className="flex justify-between items-center py-1.5" style={{ borderBottom: '1px solid rgba(214,168,79,0.06)' }}>
-                  <span style={{ color: '#5a5f6b' }}>{r.label}</span>
-                  <span className={r.mono ? 'font-mono font-bold' : 'font-medium'} style={{ color: r.color }}>{r.value}</span>
-                </div>
-              ))}
-            </div>
-            {currentIdentity.dashboardInstruction && (
-              <div className="p-2.5 rounded-xl" style={{ background: 'rgba(214,168,79,0.04)', border: '1px solid rgba(214,168,79,0.1)' }}>
-                <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#5a5f6b' }}>Dashboard Instruction</div>
-                <p className="text-xs" style={{ color: '#a8adb7' }}>{currentIdentity.dashboardInstruction}</p>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5 p-2 rounded-lg" style={{ background: 'rgba(143,92,255,0.06)', border: '1px solid rgba(143,92,255,0.15)' }}>
-              <Icon name="Info" size={11} style={{ color: '#8f5cff', flexShrink: 0 }} />
-              <span className="text-[10px]" style={{ color: '#8f5cff' }}>Demo pairing — backend live sync is added in later runs.</span>
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <Card>
-          <div className="flex flex-col items-center py-8 gap-3">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(214,168,79,0.06)', border: '1px solid rgba(214,168,79,0.1)' }}>
-              <Icon name="UserCircle" size={24} style={{ color: 'rgba(214,168,79,0.3)' }} />
-            </div>
-            <div className="text-sm font-medium text-center" style={{ color: '#5a5f6b' }}>No identity loaded.</div>
-            <div className="text-xs text-center" style={{ color: '#3a3f4b' }}>Enter a demo pairing code or select an identity below.</div>
-          </div>
-        </Card>
-      )}
-
-      {/* Pairing code entry */}
-      <Card>
-        <CardHeader icon="Key" iconColor="#d6a84f" title="Enter Pairing Code" subtitle="Demo/local — not secure live auth" />
-        <div className="p-4 space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#5a5f6b' }}>Demo Pairing Code</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={codeInput}
-                onChange={e => { setCodeInput(e.target.value.toUpperCase()); setPairResult(null) }}
-                placeholder="TS-XXXX-XXXX"
-                maxLength={12}
-                className="flex-1 rounded-xl text-sm font-mono"
-                style={{ background: 'rgba(13,13,18,0.8)', border: '1px solid rgba(214,168,79,0.2)', padding: '12px 14px', color: '#d6a84f', outline: 'none', letterSpacing: '0.05em', fontFamily: 'monospace' }}
-                onFocus={e => e.target.style.borderColor = 'rgba(214,168,79,0.5)'}
-                onBlur={e => e.target.style.borderColor = 'rgba(214,168,79,0.2)'}
-                onKeyDown={e => e.key === 'Enter' && handlePair()}
-              />
-              <TapButton onClick={handlePair} variant="gold" disabled={!codeInput.trim() || pairing} loading={pairing}>
-                <Icon name="Key" size={15} />
-                Pair
-              </TapButton>
-            </div>
-          </div>
-
-          {pairResult && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg" style={pairResult.success ? { background: 'rgba(55,255,139,0.07)', border: '1px solid rgba(55,255,139,0.2)' } : { background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)' }}>
-              <Icon name={pairResult.success ? 'CheckCircle' : 'XCircle'} size={14} style={{ color: pairResult.success ? '#37ff8b' : '#f87171', flexShrink: 0 }} />
-              <span className="text-xs" style={{ color: pairResult.success ? '#37ff8b' : '#f87171' }}>
-                {pairResult.success ? `Paired as ${pairResult.identity?.displayName} (${pairResult.identity?.id})` : pairResult.error}
-              </span>
-            </div>
-          )}
-          <p className="text-[10px]" style={{ color: '#5a5f6b' }}>
-            Demo pairing code — backend live sync is added in later runs. This is local simulation only.
-          </p>
-        </div>
-      </Card>
-
-      {/* Demo identity selector */}
-      <Card>
-        <CardHeader icon="Users" iconColor="#8f5cff" title="Demo Identity Selector" subtitle="Demo identity selector — real secure pairing comes with backend live mode" />
-        <div className="p-3 space-y-2">
-          {pwaIdentities?.filter(i => i.status !== 'Archived').map(identity => {
-            const isActive = identity.id === currentPwaId
-            return (
-              <button key={identity.id} onClick={() => handleSelect(identity.id)}
-                className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
-                style={{ background: isActive ? 'rgba(55,255,139,0.08)' : 'rgba(13,13,18,0.6)', border: `1px solid ${isActive ? 'rgba(55,255,139,0.3)' : 'rgba(214,168,79,0.08)'}` }}>
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0"
-                  style={{ background: isActive ? 'rgba(55,255,139,0.12)' : 'rgba(214,168,79,0.08)', color: isActive ? '#37ff8b' : '#d6a84f' }}>
-                  {identity.avatar}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold" style={{ color: isActive ? '#f5f5f2' : '#a8adb7' }}>{identity.displayName}</div>
-                  <div className="text-[10px]" style={{ color: '#5a5f6b' }}>{identity.roleType}</div>
-                </div>
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <code className="text-[9px] font-mono" style={{ color: '#5a5f6b' }}>{identity.id}</code>
-                  {isActive && <Icon name="CheckCircle" size={14} style={{ color: '#37ff8b' }} />}
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </Card>
-
-      {/* Security notice */}
-      <div className="p-3 rounded-xl" style={{ background: 'rgba(143,92,255,0.05)', border: '1px solid rgba(143,92,255,0.15)' }}>
-        <div className="flex items-center gap-2 mb-1.5">
-          <Icon name="ShieldCheck" size={13} style={{ color: '#8f5cff' }} />
-          <span className="text-xs font-semibold" style={{ color: '#8f5cff' }}>Security Notice</span>
-        </div>
-        <p className="text-[10px] leading-relaxed" style={{ color: '#a87dff' }}>
-          Demo pairing codes are for local simulation only. Real secure user access, authentication, and multi-device sync require backend live mode.
-        </p>
+      {/* Advisory footer */}
+      <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: 'rgba(143,92,255,0.05)', border: '1px solid rgba(143,92,255,0.15)' }}>
+        <Icon name="ShieldCheck" size={12} style={{ color: '#8f5cff', flexShrink: 0, marginTop: 1 }} />
+        <p className="text-[10px]" style={{ color: '#8f5cff' }}>{APP_CONFIG.aiAdvisory}</p>
       </div>
     </div>
   )
@@ -1536,6 +1554,9 @@ export default function DriverApp() {
   const isDemo = appMode !== 'live'
   const { backendConfig } = useConfigStore()
   const backendProvider = backendConfig ? Object.entries(backendConfig).find(([,v]) => v?.status === 'saved_locally')?.[0] : null
+  const { syncQueue, syncEvents, logSyncEvent, enqueueSubmission, updateSyncStatus, clearSentQueue } = useSyncStore()
+  const { addFeedItem } = useTrustStore()
+  const pendingQueue = (syncQueue || []).filter(q => q.status === 'pending' || q.status === 'failed').length
 
   // Seed demo data on first load
   useEffect(() => {
@@ -1558,11 +1579,11 @@ export default function DriverApp() {
       case 'case':     return <CrisisBriefScreen pwaCase={pwaCase} onTab={setActiveTab} isDemo={isDemo} />
       case 'tasks':    return <TasksScreen pwaTasks={pwaTasks} updateTask={updatePwaTask} onTab={setActiveTab} activePwaId={currentPwaId} isDemo={isDemo} />
       case 'update':   return <UpdateScreen addPwaUpdate={addPwaUpdate} pwaUpdates={pwaUpdates} pwaCase={pwaCase} />
-      case 'evidence': return <EvidenceScreen pwaNotes={pwaNotes} addNote={addNote} pwaCase={pwaCase} />
-      case 'drafts':   return <DraftsScreen pwaDraftReviews={pwaDraftReviews} updateDraftReview={updateDraftReview} />
+      case 'evidence': return <EvidenceScreen pwaNotes={pwaNotes} addNote={addNote} pwaCase={pwaCase} isDemo={isDemo} currentPwaId={currentPwaId} logSyncEvent={logSyncEvent} addFeedItem={addFeedItem} enqueueSubmission={enqueueSubmission} />
+      case 'drafts':   return <DraftsScreen pwaDraftReviews={pwaDraftReviews} updateDraftReview={updateDraftReview} isDemo={isDemo} currentPwaId={currentPwaId} logSyncEvent={logSyncEvent} addFeedItem={addFeedItem} />
       case 'escalate': return <EscalationScreen addEscalation={addEscalation} pwaEscalations={pwaEscalations} pwaCase={pwaCase} />
       case 'identity': return <IdentityScreen onTab={setActiveTab} />
-      case 'sync':     return <SyncScreen profile={profile} isDemo={isDemo} backendProvider={backendProvider} />
+      case 'sync':     return <SyncScreen profile={profile} isDemo={isDemo} backendProvider={backendProvider} pendingQueue={pendingQueue} syncEvents={syncEvents} logSyncEvent={logSyncEvent} enqueueSubmission={enqueueSubmission} updateSyncStatus={updateSyncStatus} clearSentQueue={clearSentQueue} addFeedItem={addFeedItem} currentPwaId={currentPwaId} />
       default:         return <HomeScreen profile={profile} pwaCase={pwaCase} pwaTasks={pwaTasks} onTab={setActiveTab} />
     }
   }

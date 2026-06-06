@@ -35,7 +35,8 @@ import { ROUTES } from './config_routes'
 import TaskConfigPanel from './modules_tasks_TaskConfigPanel'
 import PwaIdentityManager from './modules_ap3x_DriverHUD'
 import ApiConfigPanel from './modules_ap3x_ApiConfigPanel'
-import { useTaskStore, useIdentityStore, useConfigStore } from './core_storage'
+import SyncControlPanel from './modules_sync_SyncControlPanel'
+import { useTaskStore, useIdentityStore, useConfigStore, useSyncStore } from './core_storage'
 import { TASK_SEED_DATA, IDENTITY_SEED_DATA, CONFIG_SEED_DATA } from './data_trustsheild_demo'
 
 // ─── Colour helpers ───────────────────────────────────────────
@@ -212,6 +213,7 @@ const TABS = [
   { key: 'updates',     label: 'Updates',            icon: 'Send' },
   { key: 'backend',     label: 'Backend',            icon: 'Database' },
   { key: 'ai',          label: 'AI Agents',          icon: 'Brain' },
+  { key: 'sync',        label: 'Sync Centre',         icon: 'ArrowLeftRight' },
 ]
 
 function TabBar({ activeTab, onTab }) {
@@ -1323,6 +1325,7 @@ export default function Dashboard() {
   const { seedTaskData, resetTaskData } = useTaskStore()
   const { seedIdentities } = useIdentityStore()
   const { seedConfigData } = useConfigStore()
+  const { syncStatus, syncQueue, updateSyncStatus } = useSyncStore()
 
   // Seed demo data on first load
   useEffect(() => {
@@ -1461,6 +1464,11 @@ export default function Dashboard() {
         </SectionCard>
       )}
 
+      {activeTab === 'sync' && (
+        <SectionCard title="Sync Control Centre" icon="ArrowLeftRight" iconColor="#37ff8b" subtitle={isDemo ? 'Demo/local sync preview — shared SSOT, no backend required' : 'Live Mode sync — backend configuration required'}>
+          <SyncControlPanel isDemo={isDemo} />
+        </SectionCard>
+      )}
       {activeTab === 'backend' && (
         <>
           <SectionCard title="Demo / Live Mode" icon="Radio" iconColor={isDemo ? '#8f5cff' : '#37ff8b'} subtitle={isDemo ? 'Demo Mode active — all data is local and simulated' : 'Live Mode active — backend configuration required'}>
